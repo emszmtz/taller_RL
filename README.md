@@ -113,7 +113,19 @@ Los cálculos largos van en `scripts/` y guardan CSV en `results/`; los notebook
 | `python scripts/fase2_ajuste.py` | ~40 min | `results/fase2_*.csv` | [notebooks/02_ajuste_hiperparametros.ipynb](notebooks/02_ajuste_hiperparametros.ipynb) |
 | `python scripts/fase3_resultados.py` | ~15 min | `results/fase3_*.csv` | [notebooks/03_resultados_test.ipynb](notebooks/03_resultados_test.ipynb) |
 
-El script de la fase 3 lee `results/fase2_mejores.csv`, así que depende del de la fase 2.
+| `python scripts/figuras_informe.py` | segundos | `figures/informe_*.png` | el informe |
+
+El script de la fase 3 lee `results/fase2_mejores.csv`, así que depende del de la fase 2; el de las figuras del informe lee los resultados de la fase 3.
+
+## Informe
+
+El informe (máximo 2 páginas) está en [report/informe.md](report/informe.md) y se convierte a PDF con pandoc y XeLaTeX:
+
+```bash
+pandoc report/informe.md -o report/informe.pdf --pdf-engine=xelatex --resource-path=.
+```
+
+Hace falta [pandoc](https://pandoc.org) y una distribución de LaTeX con los paquetes `enumitem`, `caption` y `float`. Usa las fuentes Palatino y Helvetica Neue de macOS; en otro sistema, cambia `mainfont` y `sansfont` en la cabecera del `.md`. Después de editar, comprobad que sigue ocupando 2 páginas (`pdfinfo report/informe.pdf`).
 
 ## Cómo colaborar
 
@@ -128,4 +140,4 @@ El script de la fase 3 lee `results/fase2_mejores.csv`, así que depende del de 
 - [x] **Fase 2. Ajuste:** α, ε, γ, número de intervalos y de episodios, evaluados sobre series de validación. Configuraciones elegidas en `results/fase2_mejores.csv`; usar 4000 episodios. Análisis en [notebooks/02_ajuste_hiperparametros.ipynb](notebooks/02_ajuste_hiperparametros.ipynb).
 - [x] **Fase 3. Resultados:** 10 semillas nuevas, 100 series de test por mercado, tabla comparativa (`results/fase3_tabla.csv`), comparaciones con intervalos de confianza (`results/fase3_comparaciones.csv`), curvas de aprendizaje y mapas de política. Análisis en [notebooks/03_resultados_test.ipynb](notebooks/03_resultados_test.ipynb).
 - [ ] **Fase 4. Extras:** datos reales (EODHD), sensibilidad a comisiones frente a γ, Expected Sarsa o control Monte Carlo, estado con más información.
-- [ ] **Fase 5. Informe:** PDF de 2 páginas con diseño, resultados y análisis crítico.
+- [ ] **Fase 5. Informe:** PDF de 2 páginas con diseño, resultados y análisis crítico. Borrador en [report/informe.pdf](report/informe.pdf).
