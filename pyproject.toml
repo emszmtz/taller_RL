@@ -16,6 +16,7 @@ dependencies = [
 
 [project.optional-dependencies]
 notebooks = ["jupyter", "ipykernel"]
+dev = ["pytest"]
 
 [build-system]
 requires = ["setuptools>=61"]

@@ -22,12 +22,15 @@ cd miax14-taller-rl
 
 # Con uv
 uv venv --python 3.12
-uv pip install -e ".[notebooks]"
+uv pip install -e ".[notebooks,dev]"
 
 # O con pip
 python3.12 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[notebooks]"
+pip install -e ".[notebooks,dev]"
+
+# Comprobar que todo funciona (unos segundos)
+pytest
 ```
 
 `pip install -e .` instala el paquete `rl_trader` en modo editable, así que los notebooks pueden hacer `from rl_trader import ...` desde cualquier carpeta.
@@ -60,17 +63,46 @@ df = descargar_precios("SPY.US", start="2005-01-01")
 env = SimpleTradingEnv(df["adjusted_close"].to_numpy())
 ```
 
+Entrenar y evaluar un agente:
+
+```python
+from rl_trader.agents import Discretizador, entrenar
+from rl_trader.evaluation import SEMILLA_TEST, evaluar, generar_series
+
+g = GENERADORES["reversion"]
+disc = Discretizador.ajustar(g, n_intervalos=10)
+res = entrenar("sarsa", g, disc, n_episodios=2000, alpha=1.0, omega=0.6, gamma=0.9)
+evaluar(res.politica(), generar_series(g, 100, SEMILLA_TEST)).median()
+```
+
+Varios entrenamientos en paralelo: `rl_trader.experiments.ejecutar_varios(configs)`. En un notebook funciona directamente. En un script `.py`, la llamada tiene que ir dentro de `if __name__ == "__main__":`, porque en macOS y Windows cada proceso hijo vuelve a importar el script.
+
+### Series de entrenamiento, validación y test
+
+Cada conjunto sale de un rango de semillas distinto (ver `rl_trader/evaluation.py`):
+
+- **Entrenamiento:** una serie nueva en cada episodio.
+- **Validación:** 20 series, para curvas y para elegir hiperparámetros.
+- **Test:** 100 series, solo para los resultados finales.
+
+Todos los agentes se evalúan sobre las mismas series de test. **No elijáis hiperparámetros mirando el test.**
+
 ## Estructura
 
 ```
 rl_trader/          Código compartido (importable)
   env.py            Entorno del enunciado, sin modificar
   prices.py         Los 4 generadores de precios del enunciado, sin modificar
+  agents.py         Discretización del estado, Q-learning y Sarsa
+  baselines.py      Aleatorio, buy & hold, momentum y contrarian
+  evaluation.py     Conjuntos de series y métricas
+  experiments.py    Ejecución de configuraciones en paralelo
   data.py           Descarga de precios reales desde EODHD
-notebooks/          Experimentos (uno por tema)
+tests/              Comprobaciones rápidas (pytest)
+notebooks/          Experimentos (uno por fase o tema)
+results/            Tablas de resultados (CSV)
+figures/            Figuras para el informe
 ```
-
-Iremos añadiendo `rl_trader/agents.py` (Q-learning, Sarsa...), la evaluación, `results/` (CSV), `figures/` y `report/` (el PDF).
 
 ## Cómo colaborar
 
@@ -81,7 +113,7 @@ Iremos añadiendo `rl_trader/agents.py` (Q-learning, Sarsa...), la evaluación, 
 
 ## Plan de trabajo
 
-- [ ] **Fase 1. Núcleo:** discretización de la tendencia, Q-learning, Sarsa, ε con decaimiento, baselines (aleatorio, buy & hold, reglas de momentum y contrarian), evaluación y métricas.
+- [x] **Fase 1. Núcleo:** discretización de la tendencia, Q-learning, Sarsa, ε con decaimiento, baselines (aleatorio, buy & hold, reglas de momentum y contrarian), evaluación y métricas. Primera pasada en [notebooks/01_primera_pasada.ipynb](notebooks/01_primera_pasada.ipynb).
 - [ ] **Fase 2. Ajuste:** α, ε, γ, número de intervalos y de episodios, evaluados sobre series de validación.
 - [ ] **Fase 3. Resultados:** varias semillas, 100 series de test por mercado, tabla comparativa, curvas de aprendizaje y mapas de política.
 - [ ] **Fase 4. Extras:** datos reales (EODHD), sensibilidad a comisiones frente a γ, Expected Sarsa o control Monte Carlo, estado con más información.
