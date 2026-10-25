@@ -1,0 +1,18 @@
+# Secretos: la clave de EODHD va en .env, que nunca se sube (el repo es público)
+.env
+.env.*
+!.env.example
+
+# Datos descargados de EODHD: no se publican, cada uno los descarga con su clave
+data/
+
+# Entorno de Python
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+.ipynb_checkpoints/
+
+# Sistema
+.DS_Store
