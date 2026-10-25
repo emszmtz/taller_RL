@@ -5,11 +5,13 @@ import json
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from rl_trader import env as env_mod
 from rl_trader import prices as prices_mod
-from rl_trader.agents import Discretizador, entrenar, tendencias
+from rl_trader.agents import (Discretizador, entrenar, episodio_estable, politica_dentro, politica_efectiva,
+                              tendencias)
 from rl_trader.baselines import buy_and_hold
 from rl_trader.env import SimpleTradingEnv
 from rl_trader.evaluation import ejecutar_episodio
@@ -69,6 +71,41 @@ def test_sarsa_y_qlearning_actualizan_distinto():
     q_learning = entrenar("qlearning", g, disc, n_episodios=5).Q
     q_sarsa = entrenar("sarsa", g, disc, n_episodios=5).Q
     assert not np.allclose(q_learning, q_sarsa)
+
+
+def test_politica_dentro_y_efectiva():
+    Q = np.array([[0, 0, 1],   # sin activo, compra    -> dentro
+                  [1, 0, 0],   # con activo, vende     -> fuera
+                  [1, 0, 0],   # sin activo, "vende"   -> fuera
+                  [0, 1, 0]])  # con activo, mantiene  -> dentro
+    assert list(politica_dentro(Q)) == [1, 0, 0, 1]
+    assert list(politica_efectiva(Q)) == [1, 0, 0, 1]
+    Q[0] = [1, 0, 0]  # ya no compra en ningún estado: los estados con activo no se alcanzan
+    assert list(politica_efectiva(Q)) == [0, 0, 0, 0]
+
+
+def test_episodio_estable():
+    v = pd.DataFrame({"episodio": [100, 200, 300, 400], "politica": ["01", "10", "11", "11"]})
+    assert episodio_estable(v) == 300
+    v["politica"] = ["11"] * 4
+    assert episodio_estable(v) == 100
+    v["politica"] = ["11", "11", "11", "10"]
+    assert episodio_estable(v) == 400
+
+
+def test_elegir_mejores_promedia_semillas_y_desempata_por_operaciones():
+    from rl_trader.experiments import HIPERPARAMETROS, elegir_mejores
+    base = dict(mercado="m", algoritmo="qlearning", **{k: 0 for k in HIPERPARAMETROS}, val_sharpe=0.0)
+    runs = pd.DataFrame([
+        base | dict(gamma=0.0, val_mediana=10, val_operaciones=5),  # media 6: pierde
+        base | dict(gamma=0.0, val_mediana=2, val_operaciones=5),
+        base | dict(gamma=0.5, val_mediana=8, val_operaciones=9),   # media 8, opera más
+        base | dict(gamma=0.5, val_mediana=8, val_operaciones=9),
+        base | dict(gamma=0.9, val_mediana=8, val_operaciones=1),   # media 8, opera menos: gana
+        base | dict(gamma=0.9, val_mediana=8, val_operaciones=1),
+    ])
+    mejor = elegir_mejores(runs)
+    assert len(mejor) == 1 and mejor.loc[0, "gamma"] == 0.9
 
 
 def _seno(n_steps=500):

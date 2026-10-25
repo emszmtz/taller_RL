@@ -73,6 +73,38 @@ def accion_epsilon_greedy(q, eps, rng):
     return accion_greedy(q, rng)
 
 
+def politica_dentro(Q):
+    """1 donde la política greedy está dentro del mercado y 0 donde está fuera.
+
+    Sin el activo (estados pares), dentro = comprar; con el activo (impares), dentro = no vender.
+    """
+    a = Q.argmax(axis=1)
+    dentro = a != 0
+    dentro[0::2] = a[0::2] == 2
+    return dentro.astype(int)
+
+
+def politica_efectiva(Q):
+    """politica_dentro, pero si el agente no compra en ningún estado, los estados
+    con activo no se alcanzan nunca y se marcan todos como fuera."""
+    dentro = politica_dentro(Q)
+    if not dentro[0::2].any():
+        dentro[1::2] = 0
+    return dentro
+
+
+def episodio_estable(validacion):
+    """Primer control a partir del cual la política efectiva ya no cambia.
+
+    Si cambia en el último control, devuelve ese episodio: no se ha estabilizado.
+    """
+    politicas = validacion["politica"].tolist()
+    k = len(politicas) - 1
+    while k > 0 and politicas[k - 1] == politicas[-1]:
+        k -= 1
+    return int(validacion["episodio"].iloc[k])
+
+
 @dataclass
 class Resultado:
     algoritmo: str
@@ -147,6 +179,7 @@ def entrenar(algoritmo, generador, discretizador, n_episodios=2000, n_steps=N_ST
                 "retorno_pct": df["retorno_pct"].mean(),
                 "retorno_mediana_pct": df["retorno_pct"].median(),
                 "sharpe": df["sharpe"].mean(),
+                "politica": "".join(map(str, politica_efectiva(Q_actual))),
             })
 
     return Resultado(algoritmo, Q, discretizador, pd.DataFrame(historial),
@@ -155,14 +188,13 @@ def entrenar(algoritmo, generador, discretizador, n_episodios=2000, n_steps=N_ST
 
 def mapa_politica(resultado):
     """Tabla intervalo de tendencia × posición -> 'dentro'/'fuera' según la política greedy."""
-    disc, Q = resultado.discretizador, resultado.Q
+    disc = resultado.discretizador
+    dentro = politica_dentro(resultado.Q)
     bordes = [-np.inf] + disc.cortes + [np.inf]
     filas = []
     for i in range(disc.n_intervalos):
         fila = {"tendencia": f"[{bordes[i]:.4f}, {bordes[i + 1]:.4f})"}
         for pos, nombre in ((0, "sin_activo"), (1, "con_activo")):
-            a = int(np.argmax(Q[2 * i + pos]))
-            dentro = (a == 2) if pos == 0 else (a != 0)
-            fila[nombre] = "dentro" if dentro else "fuera"
+            fila[nombre] = "dentro" if dentro[2 * i + pos] else "fuera"
         filas.append(fila)
     return pd.DataFrame(filas)

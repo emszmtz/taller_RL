@@ -96,13 +96,17 @@ rl_trader/          Código compartido (importable)
   agents.py         Discretización del estado, Q-learning y Sarsa
   baselines.py      Aleatorio, buy & hold, momentum y contrarian
   evaluation.py     Conjuntos de series y métricas
-  experiments.py    Ejecución de configuraciones en paralelo
+  experiments.py    Ejecución de configuraciones en paralelo y elección de la mejor
+  plots.py          Estilo común de las figuras (paleta, mapas de calor)
   data.py           Descarga de precios reales desde EODHD
+scripts/            Cálculos largos que guardan resultados en results/
 tests/              Comprobaciones rápidas (pytest)
-notebooks/          Experimentos (uno por fase o tema)
+notebooks/          Análisis (uno por fase o tema)
 results/            Tablas de resultados (CSV)
 figures/            Figuras para el informe
 ```
+
+Los cálculos largos van en `scripts/` y guardan CSV en `results/`; los notebooks solo leen esos CSV, así que se ejecutan en segundos. Por ejemplo, `python scripts/fase2_ajuste.py` (unos 40 minutos con 10 núcleos) genera los `results/fase2_*.csv` que analiza [notebooks/02_ajuste_hiperparametros.ipynb](notebooks/02_ajuste_hiperparametros.ipynb).
 
 ## Cómo colaborar
 
@@ -114,7 +118,7 @@ figures/            Figuras para el informe
 ## Plan de trabajo
 
 - [x] **Fase 1. Núcleo:** discretización de la tendencia, Q-learning, Sarsa, ε con decaimiento, baselines (aleatorio, buy & hold, reglas de momentum y contrarian), evaluación y métricas. Primera pasada en [notebooks/01_primera_pasada.ipynb](notebooks/01_primera_pasada.ipynb).
-- [ ] **Fase 2. Ajuste:** α, ε, γ, número de intervalos y de episodios, evaluados sobre series de validación.
+- [x] **Fase 2. Ajuste:** α, ε, γ, número de intervalos y de episodios, evaluados sobre series de validación. Configuraciones elegidas en `results/fase2_mejores.csv`; usar 4000 episodios. Análisis en [notebooks/02_ajuste_hiperparametros.ipynb](notebooks/02_ajuste_hiperparametros.ipynb).
 - [ ] **Fase 3. Resultados:** varias semillas, 100 series de test por mercado, tabla comparativa, curvas de aprendizaje y mapas de política.
 - [ ] **Fase 4. Extras:** datos reales (EODHD), sensibilidad a comisiones frente a γ, Expected Sarsa o control Monte Carlo, estado con más información.
 - [ ] **Fase 5. Informe:** PDF de 2 páginas con diseño, resultados y análisis crítico.
