@@ -105,6 +105,16 @@ def episodio_estable(validacion):
     return int(validacion["episodio"].iloc[k])
 
 
+def episodio_convergencia(validacion, columna="retorno_mediana_pct", tol_rel=0.1, tol_abs=1.0):
+    """Primer control a partir del cual la métrica de validación ya no se aleja de
+    su valor final más de max(tol_rel · |final|, tol_abs)."""
+    v = validacion[columna].to_numpy()
+    tolerancia = max(tol_rel * abs(v[-1]), tol_abs)
+    lejos = np.flatnonzero(np.abs(v - v[-1]) > tolerancia)
+    k = lejos[-1] + 1 if len(lejos) else 0
+    return int(validacion["episodio"].iloc[k])
+
+
 @dataclass
 class Resultado:
     algoritmo: str
@@ -112,7 +122,7 @@ class Resultado:
     discretizador: Discretizador
     historial: pd.DataFrame   # una fila por episodio de entrenamiento
     validacion: pd.DataFrame  # métricas en validación cada evaluar_cada episodios
-    segundos: float
+    segundos: float           # tiempo de entrenamiento, sin contar las evaluaciones en validación
 
     def politica(self):
         """Política greedy respecto a Q, para evaluar (sin exploración)."""
@@ -137,6 +147,7 @@ def entrenar(algoritmo, generador, discretizador, n_episodios=2000, n_steps=N_ST
     visitas = np.zeros_like(Q)
     historial, validacion = [], []
     inicio = time.perf_counter()
+    t_evaluando = 0.0
 
     for ep in range(n_episodios):
         eps = epsilon_exponencial(ep, n_episodios, eps_inicial, eps_final, frac_decaimiento)
@@ -171,19 +182,21 @@ def entrenar(algoritmo, generador, discretizador, n_episodios=2000, n_steps=N_ST
             "retorno_pct": 100 * (env.balance / env.initial_balance - 1),
         })
         if series_validacion is not None and ((ep + 1) % evaluar_cada == 0 or ep + 1 == n_episodios):
+            t0 = time.perf_counter()
             Q_actual = Q.copy()
             df = evaluar(lambda o: int(np.argmax(Q_actual[discretizador(o)])), series_validacion)
             validacion.append({
                 "episodio": ep + 1,
-                "segundos": time.perf_counter() - inicio,
+                "segundos": t0 - inicio - t_evaluando,
                 "retorno_pct": df["retorno_pct"].mean(),
                 "retorno_mediana_pct": df["retorno_pct"].median(),
                 "sharpe": df["sharpe"].mean(),
                 "politica": "".join(map(str, politica_efectiva(Q_actual))),
             })
+            t_evaluando += time.perf_counter() - t0
 
     return Resultado(algoritmo, Q, discretizador, pd.DataFrame(historial),
-                     pd.DataFrame(validacion), time.perf_counter() - inicio)
+                     pd.DataFrame(validacion), time.perf_counter() - inicio - t_evaluando)
 
 
 def mapa_politica(resultado):

@@ -10,8 +10,8 @@ import pytest
 
 from rl_trader import env as env_mod
 from rl_trader import prices as prices_mod
-from rl_trader.agents import (Discretizador, entrenar, episodio_estable, politica_dentro, politica_efectiva,
-                              tendencias)
+from rl_trader.agents import (Discretizador, entrenar, episodio_convergencia, episodio_estable, politica_dentro,
+                              politica_efectiva, tendencias)
 from rl_trader.baselines import buy_and_hold
 from rl_trader.env import SimpleTradingEnv
 from rl_trader.evaluation import ejecutar_episodio
@@ -91,6 +91,25 @@ def test_episodio_estable():
     assert episodio_estable(v) == 100
     v["politica"] = ["11", "11", "11", "10"]
     assert episodio_estable(v) == 400
+
+
+def test_episodio_convergencia():
+    v = pd.DataFrame({"episodio": [100, 200, 300, 400], "retorno_mediana_pct": [0.0, 50.0, 95.0, 100.0]})
+    assert episodio_convergencia(v) == 300   # 95 está a menos del 10% de 100
+    v["retorno_mediana_pct"] = [0.0, 0.0, 0.0, 0.0]
+    assert episodio_convergencia(v) == 100
+    v["retorno_mediana_pct"] = [5.0, 0.5, -0.5, 0.0]
+    assert episodio_convergencia(v) == 200   # tolerancia absoluta de 1 punto
+
+
+def test_ic_bootstrap_pareado():
+    from rl_trader.evaluation import ic_bootstrap_pareado
+    rng = np.random.default_rng(0)
+    y = rng.normal(size=200)
+    media, inf, sup = ic_bootstrap_pareado(y + 1.0, y)
+    assert media == pytest.approx(1.0) and inf == pytest.approx(1.0) and sup == pytest.approx(1.0)
+    media, inf, sup = ic_bootstrap_pareado(rng.normal(size=200), np.zeros(200))
+    assert inf < media < sup and inf < 0 < sup
 
 
 def test_elegir_mejores_promedia_semillas_y_desempata_por_operaciones():

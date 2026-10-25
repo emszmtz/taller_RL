@@ -67,6 +67,16 @@ def evaluar(politica, series):
     return pd.DataFrame([metricas(*ejecutar_episodio(p, politica)) for p in series])
 
 
+def ic_bootstrap_pareado(x, y, n=10_000, nivel=0.95, seed=0):
+    """Diferencia media x - y entre observaciones pareadas (la misma serie de test)
+    y su intervalo de confianza bootstrap. Devuelve (media, inferior, superior)."""
+    d = np.asarray(x, dtype=float) - np.asarray(y, dtype=float)
+    rng = np.random.default_rng(seed)
+    medias = d[rng.integers(0, len(d), size=(n, len(d)))].mean(axis=1)
+    cola = (1 - nivel) / 2
+    return d.mean(), np.quantile(medias, cola), np.quantile(medias, 1 - cola)
+
+
 def resumir(evaluaciones):
     """{nombre: DataFrame de evaluar()} -> tabla con media y desviación de cada métrica.
 

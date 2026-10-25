@@ -106,7 +106,14 @@ results/            Tablas de resultados (CSV)
 figures/            Figuras para el informe
 ```
 
-Los cálculos largos van en `scripts/` y guardan CSV en `results/`; los notebooks solo leen esos CSV, así que se ejecutan en segundos. Por ejemplo, `python scripts/fase2_ajuste.py` (unos 40 minutos con 10 núcleos) genera los `results/fase2_*.csv` que analiza [notebooks/02_ajuste_hiperparametros.ipynb](notebooks/02_ajuste_hiperparametros.ipynb).
+Los cálculos largos van en `scripts/` y guardan CSV en `results/`; los notebooks solo leen esos CSV, así que se ejecutan en segundos.
+
+| Script | Tiempo (10 núcleos) | Genera | Lo analiza |
+|---|---|---|---|
+| `python scripts/fase2_ajuste.py` | ~40 min | `results/fase2_*.csv` | [notebooks/02_ajuste_hiperparametros.ipynb](notebooks/02_ajuste_hiperparametros.ipynb) |
+| `python scripts/fase3_resultados.py` | ~15 min | `results/fase3_*.csv` | [notebooks/03_resultados_test.ipynb](notebooks/03_resultados_test.ipynb) |
+
+El script de la fase 3 lee `results/fase2_mejores.csv`, así que depende del de la fase 2.
 
 ## Cómo colaborar
 
@@ -119,6 +126,6 @@ Los cálculos largos van en `scripts/` y guardan CSV en `results/`; los notebook
 
 - [x] **Fase 1. Núcleo:** discretización de la tendencia, Q-learning, Sarsa, ε con decaimiento, baselines (aleatorio, buy & hold, reglas de momentum y contrarian), evaluación y métricas. Primera pasada en [notebooks/01_primera_pasada.ipynb](notebooks/01_primera_pasada.ipynb).
 - [x] **Fase 2. Ajuste:** α, ε, γ, número de intervalos y de episodios, evaluados sobre series de validación. Configuraciones elegidas en `results/fase2_mejores.csv`; usar 4000 episodios. Análisis en [notebooks/02_ajuste_hiperparametros.ipynb](notebooks/02_ajuste_hiperparametros.ipynb).
-- [ ] **Fase 3. Resultados:** varias semillas, 100 series de test por mercado, tabla comparativa, curvas de aprendizaje y mapas de política.
+- [x] **Fase 3. Resultados:** 10 semillas nuevas, 100 series de test por mercado, tabla comparativa (`results/fase3_tabla.csv`), comparaciones con intervalos de confianza (`results/fase3_comparaciones.csv`), curvas de aprendizaje y mapas de política. Análisis en [notebooks/03_resultados_test.ipynb](notebooks/03_resultados_test.ipynb).
 - [ ] **Fase 4. Extras:** datos reales (EODHD), sensibilidad a comisiones frente a γ, Expected Sarsa o control Monte Carlo, estado con más información.
 - [ ] **Fase 5. Informe:** PDF de 2 páginas con diseño, resultados y análisis crítico.

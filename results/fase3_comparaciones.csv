@@ -1,0 +1,24 @@
+mercado,comparación,ratio,IC 95%,significativa
+ciclo,Q-learning vs Sarsa,0.9805590531231587,[0.97; 1.00],sí
+ciclo,Sarsa vs Buy & hold,18.114291821663475,[12.89; 25.20],sí
+ciclo,Sarsa vs Momentum (mejor regla),1.367634965228027,[1.15; 1.61],sí
+ciclo,Sarsa vs no operar,648.5604215058353,[463.91; 896.15],sí
+ciclo,Q-learning: ajustado vs sin ajustar,1.1914300994914273,[1.02; 1.38],sí
+ciclo,Sarsa: ajustado vs sin ajustar,1.178296403199648,[1.00; 1.37],sí
+browniano,Q-learning vs Sarsa,0.9835727039895008,[0.98; 0.99],sí
+browniano,Sarsa vs Buy & hold,1.0125066225443013,[0.93; 1.10],no
+browniano,Sarsa vs no operar,1.0,[1.00; 1.00],no
+browniano,Q-learning: ajustado vs sin ajustar,0.9835727039895008,[0.98; 0.99],sí
+browniano,Sarsa: ajustado vs sin ajustar,1.0,[1.00; 1.00],no
+reversion,Q-learning vs Sarsa,0.9934230287461638,[0.98; 1.01],no
+reversion,Sarsa vs Buy & hold,1.2390315412084612,[1.19; 1.29],sí
+reversion,Sarsa vs Contrarian (mejor regla),1.1425076495667112,[1.09; 1.20],sí
+reversion,Sarsa vs no operar,1.2155310006356284,[1.17; 1.26],sí
+reversion,Q-learning: ajustado vs sin ajustar,1.0072548906171668,[0.97; 1.04],no
+reversion,Sarsa: ajustado vs sin ajustar,1.0328482612346277,[1.00; 1.07],no
+regimenes,Q-learning vs Sarsa,1.0169972255497384,[1.00; 1.04],no
+regimenes,Q-learning vs Buy & hold,1.3826240505376195,[1.28; 1.49],sí
+regimenes,Q-learning vs Momentum (mejor regla),1.3042500202676093,[1.25; 1.36],sí
+regimenes,Q-learning vs no operar,1.0643573498725742,[1.03; 1.10],sí
+regimenes,Q-learning: ajustado vs sin ajustar,1.0546293495602073,[1.03; 1.08],sí
+regimenes,Sarsa: ajustado vs sin ajustar,1.0465685875369377,[1.00; 1.09],sí
