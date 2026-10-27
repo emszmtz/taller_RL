@@ -116,7 +116,7 @@ Los cálculos largos van en `scripts/` y guardan CSV en `results/`; los notebook
 | `python scripts/fase3_resultados.py` | ~15 min | `results/fase3_*.csv` | [notebooks/03_resultados_test.ipynb](notebooks/03_resultados_test.ipynb) |
 | `python scripts/fase4_montecarlo.py` | ~47 min (16 procesos) | `results/fase4_mc_*.csv` | [notebooks/04_montecarlo.ipynb](notebooks/04_montecarlo.ipynb) |
 | `python scripts/figuras_informe.py` | segundos | `figures/informe_*.png` | el informe |
-| `python scripts/informe_pdf.py` | segundos | `entregable/informe_taller_RL.pdf` | — |
+| `python scripts/informe_pdf.py` (sin LaTeX) | segundos | `report/informe_sin_latex.pdf` | — |
 
 Los scripts de las fases 3 y 4 leen `results/fase2_mejores.csv`, así que dependen del de la fase 2; el de las figuras del informe lee los resultados de las fases 3 y 4.
 
@@ -126,16 +126,20 @@ El informe (máximo 2 páginas) está en [report/informe.md](report/informe.md) 
 
 ```bash
 pandoc report/informe.md -o report/informe.pdf --pdf-engine=xelatex --resource-path=.
+cp report/informe.pdf entregable/informe_taller_RL.pdf    # el PDF que se entrega
 ```
 
-Hace falta [pandoc](https://pandoc.org) y una distribución de LaTeX con los paquetes `enumitem`, `caption` y `float`. Usa las fuentes Palatino y Helvetica Neue de macOS; en otro sistema, cambia `mainfont` y `sansfont` en la cabecera del `.md`. Después de editar, comprobad que sigue ocupando 2 páginas (`pdfinfo report/informe.pdf`).
+Hace falta [pandoc](https://pandoc.org) y una distribución de LaTeX con los paquetes `enumitem`, `caption` y `float`. Las fuentes son TeX Gyre Pagella y TeX Gyre Heros (clones de Palatino y Helvetica), que vienen con MacTeX, MiKTeX y TeX Live, así que el PDF sale igual en macOS, Windows y Linux. Después de editar, comprobad que sigue ocupando 2 páginas (`pdfinfo report/informe.pdf`).
 
-**Sin LaTeX** (por ejemplo, en Windows) se puede generar el PDF que se entrega a partir del mismo `informe.md`, con pandoc instalado desde pip y Edge o Chrome para imprimir:
+En **Windows**, con MiKTeX (instala solo, sin administrador, los paquetes de LaTeX que falten) y pandoc desde pip:
 
 ```bash
-pip install pypandoc_binary
-python scripts/informe_pdf.py        # -> entregable/informe_taller_RL.pdf
+winget install --id MiKTeX.MiKTeX -e --scope user
+initexmf --set-config-value "[MPM]AutoInstall=1"
+pip install pypandoc_binary    # pandoc queda en python -c "import pypandoc; print(pypandoc.get_pandoc_path())"
 ```
+
+**Sin LaTeX**, `python scripts/informe_pdf.py` genera una versión aproximada a partir del mismo `informe.md` (pandoc a HTML e impresión con Edge o Chrome) en `report/informe_sin_latex.pdf`. La maquetación cambia un poco: comprobad que también ocupa 2 páginas.
 
 ## Cómo colaborar
 

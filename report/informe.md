@@ -1,31 +1,37 @@
 ---
 # Para generar el PDF, desde la raíz del repositorio:
 #   pandoc report/informe.md -o report/informe.pdf --pdf-engine=xelatex --resource-path=.
+#   cp report/informe.pdf entregable/informe_taller_RL.pdf
 #   (el título y los autores están en el bloque \begin{center} del principio del texto)
-# Sin LaTeX:  python scripts/informe_pdf.py   ->  entregable/informe_taller_RL.pdf
+# Sin LaTeX (versión aproximada):  python scripts/informe_pdf.py  ->  report/informe_sin_latex.pdf
 title-meta: "Q-learning, Sarsa y Monte Carlo para invertir en un activo"
 author-meta: "Josep Perez Segura, Natalia SanJosé Ortega, Emilio Sánchez Martínez"
 lang: es
 fontsize: 10pt
-geometry: "a4paper, margin=1.6cm"
-mainfont: "Palatino"
-sansfont: "Helvetica Neue"
+geometry: "a4paper, top=1.3cm, bottom=1.3cm, left=1.6cm, right=1.6cm"
+# TeX Gyre Pagella y Heros (clones de Palatino y Helvetica) vienen con MacTeX, MiKTeX y TeX Live:
+# cargadas por fichero, el PDF sale igual en macOS, Windows y Linux
+mainfont: texgyrepagella
+mainfontoptions: [Extension=.otf, UprightFont=*-regular, BoldFont=*-bold, ItalicFont=*-italic, BoldItalicFont=*-bolditalic]
+sansfont: texgyreheros
+sansfontoptions: [Extension=.otf, UprightFont=*-regular, BoldFont=*-bold, ItalicFont=*-italic, BoldItalicFont=*-bolditalic]
+mathfont: texgyrepagella-math.otf
 colorlinks: true
 header-includes:
   - \usepackage{float}
   - \floatplacement{figure}{H}
-  - \setlength{\intextsep}{4pt plus 2pt minus 2pt}
+  - \setlength{\intextsep}{3pt plus 1pt minus 2pt}
   - \makeatletter
   - \renewcommand\section{\@startsection{section}{1}{\z@}{5pt}{2pt}{\normalsize\bfseries\sffamily}}
   - \makeatother
-  - \setlength{\parskip}{2.5pt}
+  - \setlength{\parskip}{2pt}
   - \setlength{\parindent}{0pt}
   - \usepackage{enumitem}
-  - \setlist{itemsep=1pt, topsep=1pt, leftmargin=1.2em}
+  - \setlist{itemsep=0.5pt, topsep=1pt, leftmargin=1.2em}
   - \setlist[itemize,1]{label=\textbullet}
   - \setlist[itemize,2]{label=--}
   - \usepackage{caption}
-  - \captionsetup{font=small, labelfont=bf, skip=3pt}
+  - \captionsetup{font=small, labelfont=bf, skip=2pt}
   - \AtBeginDocument{\renewcommand{\tablename}{Tabla}}
   - \pagenumbering{gobble}
 ---
@@ -74,7 +80,7 @@ Por etapas y solo en validación (3 semillas × 100 series; 864 entrenamientos p
 | *Convergencia Sarsa* | 600 ep. · 4 s | 200 ep. · 2 s | 3700 ep. · 29 s | 2000 ep. · 16 s |
 | *Convergencia MC* | 3100 ep. | 600 ep. | 3500 ep. | 3800 ep. |
 
-: Mediana del retorno en test (%) y Sharpe medio; 100 series por mercado (× 10 semillas nuevas para RL). Convergencia: mediana entre semillas; sin segundos para MC, que se entrenó en otro equipo (el coste por episodio es similar).
+: Mediana del retorno porcentual en test y Sharpe medio; 100 series por mercado (× 10 semillas nuevas para RL). Convergencia: mediana entre semillas; sin segundos para MC, que se entrenó en otro equipo (el coste por episodio es similar).
 
 \normalsize
 

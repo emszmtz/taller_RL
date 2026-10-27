@@ -1,12 +1,13 @@
 """PDF del informe sin LaTeX: report/informe.md -> HTML (pandoc) -> PDF (Edge o Chrome headless).
 
 Alternativa a la orden de pandoc + xelatex de la cabecera de informe.md, para
-equipos sin LaTeX (p. ej. Windows). El texto sale del mismo informe.md: los
-bloques LaTeX se ignoran y la cabecera se lee del bloque \\begin{center}.
+equipos sin LaTeX. El texto sale del mismo informe.md: los bloques LaTeX se
+ignoran y la cabecera se lee del bloque \\begin{center}. El PDF que se entrega
+es el de LaTeX (ver README); este es una aproximación.
 
 Requisitos: pip install pypandoc_binary, y Microsoft Edge o Google Chrome.
 Uso, desde la raíz del repositorio:  python scripts/informe_pdf.py [salida.pdf]
-Por defecto escribe entregable/informe_taller_RL.pdf.
+Por defecto escribe report/informe_sin_latex.pdf.
 """
 import re
 import shutil
@@ -19,7 +20,7 @@ import pypandoc
 
 ROOT = Path(__file__).resolve().parent.parent
 INFORME = ROOT / "report" / "informe.md"
-SALIDA = ROOT / "entregable" / "informe_taller_RL.pdf"
+SALIDA = ROOT / "report" / "informe_sin_latex.pdf"
 NAVEGADORES = [
     r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
     r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
