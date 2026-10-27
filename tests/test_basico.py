@@ -10,7 +10,7 @@ import pytest
 
 from rl_trader import env as env_mod
 from rl_trader import prices as prices_mod
-from rl_trader.agents import (Discretizador, entrenar, episodio_convergencia, episodio_estable, politica_dentro,
+from rl_trader.agents import (Discretizador, actualizar_montecarlo, entrenar, episodio_convergencia, episodio_estable, politica_dentro,
                               politica_efectiva, tendencias)
 from rl_trader.baselines import buy_and_hold
 from rl_trader.env import SimpleTradingEnv
@@ -26,7 +26,7 @@ def _definiciones(fuente):
 
 def test_entorno_y_generadores_identicos_al_enunciado():
     del_enunciado = {}
-    for celda in json.loads(ENUNCIADO.read_text())["cells"]:
+    for celda in json.loads(ENUNCIADO.read_text(encoding="utf-8"))["cells"]:
         if celda["cell_type"] == "code":
             del_enunciado.update(_definiciones("".join(celda["source"])))
     for mod in (env_mod, prices_mod):
@@ -71,6 +71,25 @@ def test_sarsa_y_qlearning_actualizan_distinto():
     q_learning = entrenar("qlearning", g, disc, n_episodios=5).Q
     q_sarsa = entrenar("sarsa", g, disc, n_episodios=5).Q
     assert not np.allclose(q_learning, q_sarsa)
+
+
+def test_montecarlo_todas_y_primera_visita():
+    # Episodio: (s0, a0) r=1, (s1, a0) r=2, (s0, a0) r=4 con γ = 0,5 -> retornos 3, 4, 4
+    trayectoria = [(0, 0, 1.0), (1, 0, 2.0), (0, 0, 4.0)]
+    for primera, esperado_s0 in ((False, (3 + 4) / 2), (True, 3.0)):
+        Q, visitas = np.zeros((2, 3)), np.zeros((2, 3))
+        actualizar_montecarlo(Q, visitas, trayectoria, alpha=1.0, omega=1.0, gamma=0.5, primera_visita=primera)
+        assert Q[0, 0] == pytest.approx(esperado_s0)   # α = 1/n: promedio de los retornos
+        assert Q[1, 0] == pytest.approx(4.0)
+        assert visitas[0, 0] == (1 if primera else 2)
+
+
+def test_montecarlo_con_gamma_0_estima_la_recompensa_inmediata():
+    """Con γ = 0 el retorno es la recompensa inmediata: MC y TD tienen el mismo objetivo."""
+    trayectoria = [(0, 2, 0.5), (0, 2, 1.5), (1, 0, -1.0)]
+    Q, visitas = np.zeros((2, 3)), np.zeros((2, 3))
+    actualizar_montecarlo(Q, visitas, trayectoria, alpha=1.0, omega=1.0, gamma=0.0)
+    assert Q[0, 2] == pytest.approx(1.0) and Q[1, 0] == pytest.approx(-1.0)
 
 
 def test_politica_dentro_y_efectiva():
@@ -131,7 +150,7 @@ def _seno(n_steps=500):
     return 100 + 10 * np.sin(2 * np.pi * np.arange(n_steps) / 40)
 
 
-@pytest.mark.parametrize("algoritmo", ["qlearning", "sarsa"])
+@pytest.mark.parametrize("algoritmo", ["qlearning", "sarsa", "montecarlo"])
 def test_aprende_momentum_en_un_mercado_determinista(algoritmo):
     """En una sinusoide sin ruido seguir la tendencia es claramente lo mejor."""
     disc = Discretizador.ajustar(_seno, n_intervalos=4, n_series=1)

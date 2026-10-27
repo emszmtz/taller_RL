@@ -2,7 +2,8 @@
 # Para generar el PDF, desde la raíz del repositorio:
 #   pandoc report/informe.md -o report/informe.pdf --pdf-engine=xelatex --resource-path=.
 #   (el título y los autores están en el bloque \begin{center} del principio del texto)
-title-meta: "Q-learning y Sarsa para invertir en un activo"
+# Sin LaTeX:  python scripts/informe_pdf.py   ->  entregable/informe_taller_RL.pdf
+title-meta: "Q-learning, Sarsa y Monte Carlo para invertir en un activo"
 author-meta: "Josep Perez Segura, Natalia SanJosé Ortega, Emilio Sánchez Martínez"
 lang: es
 fontsize: 10pt
@@ -30,35 +31,31 @@ header-includes:
 ---
 
 \begin{center}
-{\large\bfseries\sffamily Q-learning y Sarsa para invertir en un activo: cuatro mercados simulados}\par\vspace{3pt}
+{\large\bfseries\sffamily Q-learning, Sarsa y Monte Carlo para invertir en un activo: cuatro mercados simulados}\par\vspace{3pt}
 {\small Josep Perez Segura · Natalia SanJosé Ortega · Emilio Sánchez Martínez}\par
 {\small\itshape Taller de Aprendizaje por Refuerzo · MIAX-14 · octubre de 2026}
 \end{center}
 
-**Resumen.** Entrenamos agentes tabulares Q-learning y Sarsa en el entorno del enunciado, sin modificarlo, con los cuatro generadores de precios. Los comparamos con el agente aleatorio, *buy & hold* y dos reglas fijas (*momentum* y *contrarian*) en 100 series de test nuevas por mercado. Los agentes aprenden la estrategia esperada: seguir la tendencia donde hay inercia, ir contra ella donde hay reversión y no operar donde no hay señal. Superan a todas las referencias, salvo en el browniano, donde no hay nada que explotar.
+**Resumen.** Entrenamos agentes tabulares Q-learning y Sarsa y, como extra, control Monte Carlo (MC) en el entorno del enunciado, sin modificarlo, con los cuatro generadores de precios. Los comparamos con el agente aleatorio, *buy & hold* (B&H) y dos reglas fijas (*momentum* y *contrarian*) en 100 series de test nuevas por mercado. Los agentes aprenden la estrategia esperada: seguir la tendencia donde hay inercia, ir contra ella donde hay reversión y no operar donde no hay señal. Superan a todas las referencias, salvo en el browniano, donde no hay nada que explotar.
 
 # 1. Diseño experimental
 
-- **Estado.** La tendencia es continua y su escala cambia mucho entre mercados (ruido del 10% por paso en el de ciclo y del 1–2,5% en los demás). La dividimos en $k$ intervalos **simétricos, con el 0 como corte**, a partir de cuantiles de $|$tendencia$|$ en series de entrenamiento de cada mercado. Así cada intervalo recibe un número parecido de visitas y ninguno mezcla tendencias de signo distinto. Con la posición, el estado toma $2k$ valores.
-- **Acciones y $\gamma$.** Vender sin el activo o comprar teniéndolo no hace nada: en la práctica el agente decide si está dentro o fuera. Además, no influye en la tendencia, solo en su posición. Sin comisiones bastaría con $\gamma = 0$; $\gamma$ sirve para que tenga en cuenta lo que costará entrar y salir.
-- **Aprendizaje.** $\varepsilon$ decrece exponencialmente de 1 a $\varepsilon_f$. La tasa es constante o decreciente, $\alpha = 1/n(s,a)^{\omega}$ con $0{,}5 < \omega \le 1$, que cumple $\sum \alpha = \infty$ y $\sum \alpha^2 < \infty$. Con $\alpha = 0{,}05$ constante, el ruido de los retornos (1–10% por paso) tapaba señales del orden de la comisión (0,1%).
-- **Datos y métricas.** Cada episodio usa una serie nueva de 500 pasos. Entrenamiento, validación (100 series) y test (100 series) salen de semillas disjuntas, y todos los agentes se evalúan sobre las mismas series de test (comparación pareada). La métrica principal es la mediana del retorno, porque en el mercado de ciclo la media la dominan unas pocas series. La **convergencia** es el episodio desde el que la mediana en validación no se aleja más de un 10% (o 1 punto) de su valor final.
+- **Estado.** La tendencia es continua y su escala cambia mucho entre mercados (ruido del 10% por paso en el ciclo y del 1–2,5% en el resto). La dividimos en $k$ intervalos **simétricos, con el 0 como corte**, según cuantiles de |tendencia| de cada mercado: visitas parecidas por intervalo y ninguno mezcla signos; con la posición, $2k$ estados.
+- **Acciones y $\gamma$.** El agente solo decide si está dentro o fuera, y no influye en la tendencia. Sin comisiones bastaría con $\gamma = 0$; $\gamma$ sirve para anticipar lo que costará entrar y salir.
+- **Algoritmos.** Q-learning, Sarsa y, como extra, control MC *on-policy* de primera visita o de todas las visitas (slides 2). Todos son $\varepsilon$-greedy, con $\varepsilon$ decreciendo exponencialmente de 1 a $\varepsilon_f$, y usan $\alpha$ constante o $\alpha = 1/n(s,a)^{\omega}$ con $0{,}5 < \omega \le 1$, que cumple $\sum \alpha = \infty$ y $\sum \alpha^2 < \infty$.
+- **Datos y métricas.** Cada episodio usa una serie nueva de 500 pasos; validación y test (100 series cada uno) usan semillas disjuntas y son comunes a todos los agentes. Métrica principal: la mediana del retorno (en el ciclo, unas pocas series dominan la media). **Convergencia:** episodio desde el que la mediana en validación queda a menos de un 10% (o 1 punto) de su valor final.
 
-**Hipótesis.** Antes de entrenar medimos el retorno medio del paso siguiente en cada intervalo de tendencia. En el ciclo hay mucha inercia (de −2,5% a +4,5% según el intervalo); en el browniano, nada; en la reversión, señal contraria, pero solo los intervalos extremos superan la comisión; en regímenes, una señal débil, porque las tendencias extremas aparecen sobre todo en el régimen bajista, que es más volátil.
+**Estrategia esperada.** Antes de entrenar medimos el retorno medio del paso siguiente en cada intervalo de tendencia: mucha inercia en el ciclo (de −2,5% a +4,5%), nada en el browniano, señal contraria en la reversión (solo los extremos superan la comisión) y una señal débil en regímenes. Esperamos *momentum*, no operar, *contrarian* selectivo y, en regímenes, poco que ganar.
 
 # 2. Ajuste de hiperparámetros
 
-Búsqueda por etapas, solo en validación (3 semillas × 100 series; 864 entrenamientos):
+Por etapas y solo en validación (3 semillas × 100 series; 864 entrenamientos para TD y 660 para MC):
 
-- **Etapa A:** $\alpha \in \{0{,}01;\ 0{,}001;\ 1/n^{0,6};\ 1/n^{0,8};\ 1/n\}$ × $\gamma \in \{0;\ 0{,}5;\ 0{,}9;\ 0{,}99\}$.
-- **Etapa B:** con el mejor $\alpha$ y $\gamma$, $k \in \{4, 6, 10, 16, 20\}$ × tres calendarios de $\varepsilon$.
-- **Etapa C:** 6000 episodios para ver cuándo se estabiliza el aprendizaje. De aquí sale el uso de **4000 episodios**.
+- **Etapa A:** $\alpha \in \{0{,}01;\ 0{,}001;\ 1/n^{0,6};\ 1/n^{0,8};\ 1/n\}$ × $\gamma \in \{0;\ 0{,}5;\ 0{,}9;\ 0{,}99\}$ (× primera visita o todas, en MC).
+- **Etapa B:** con lo mejor de A, $k \in \{4, 6, 10, 16, 20\}$ × tres calendarios de $\varepsilon$.
+- **Etapa C, episodios:** con 6000, la validación se estabiliza a los 4000 en todos los mercados (con 2000, Sarsa aún iba por el 0,2% en regímenes, frente al 6,5% final): entrenamos con **4000**. El ajuste usó 2000 por coste, lo que puede penalizar a los $\alpha$ pequeños.
 
-Lo más relevante por mercado:
-
-- **Ciclo:** $\gamma = 0$ y $k = 4$. La señal de un paso es enorme y un $\gamma$ alto solo añade ruido al objetivo. Con $\gamma = 0$, Q-learning y Sarsa hacen exactamente la misma actualización.
-- **Reversión:** $\gamma = 0{,}5$ y $k$ = 16–20. **Browniano:** ninguna configuración mejora a no operar.
-- **Regímenes:** $\alpha = 0{,}001$ constante, $\gamma \geq 0{,}9$ y $k$ = 16–20. Con la configuración por defecto ($\alpha = 1/n^{0,6}$, $\gamma = 0{,}9$, $k = 10$) el agente casi no operaba.
+**Elegidos:** $\gamma = 0$ en ciclo y browniano (la señal es de un paso y un $\gamma$ alto solo añade ruido); $\gamma = 0{,}5$ y $k$ = 16–20 en reversión; $\alpha = 0{,}001$ constante, $\gamma \geq 0{,}9$ y $k$ = 16–20 en regímenes, donde los valores por defecto casi no operaban. MC elige lo mismo, salvo $\gamma = 0{,}5$ en regímenes.
 
 # 3. Resultados en test
 
@@ -70,35 +67,38 @@ Lo más relevante por mercado:
 | Buy & hold | +3.425 (1,9) | +0,7 (0,1) | −1,1 (0,1) | −20,4 (−0,3) |
 | Momentum | +48.189 (3,1) | −11,8 (−0,2) | −28,7 (−0,6) | −18,4 (−0,4) |
 | Contrarian | −92,9 (−0,7) | −14,3 (−0,2) | +6,9 (0,3) | −22,6 (−0,5) |
-| Q-learning sin ajustar | +46.432 (3,0) | 0 (0,0) | +19,9 (0,5) | 0 (0,1) |
-| Sarsa sin ajustar | +46.432 (3,1) | 0 (0,0) | +17,2 (0,6) | 0 (0,0) |
 | **Q-learning** | **+64.989 (3,2)** | 0 (−0,1) | **+22,0 (0,5)** | **+1,7 (0,3)** |
 | **Sarsa** | **+67.861 (3,2)** | 0 (0,0) | **+22,2 (0,5)** | **+4,7 (0,2)** |
+| **Monte Carlo** | **+53.896 (3,0)** | 0 (0,0) | **+24,9 (0,6)** | 0 (0,2) |
 | *Convergencia Q-learning* | 2600 ep. · 24 s | 500 ep. · 5 s | 3300 ep. · 30 s | 2900 ep. · 28 s |
 | *Convergencia Sarsa* | 600 ep. · 4 s | 200 ep. · 2 s | 3700 ep. · 29 s | 2000 ep. · 16 s |
+| *Convergencia MC* | 3100 ep. | 600 ep. | 3500 ep. | 3800 ep. |
 
-: Mediana del retorno en test (%) y Sharpe medio entre paréntesis. 100 series por mercado; para los agentes de RL, 10 semillas nuevas (1000 episodios). *Sin ajustar*: configuración por defecto con 2000 episodios. Convergencia: mediana entre semillas, en episodios y segundos de entrenamiento.
+: Mediana del retorno en test (%) y Sharpe medio; 100 series por mercado (× 10 semillas nuevas para RL). Convergencia: mediana entre semillas; sin segundos para MC, que se entrenó en otro equipo (el coste por episodio es similar).
 
 \normalsize
 
 ![Capital final en test por agente y mercado: mediana (punto) y percentiles 25–75 (línea).](figures/informe_capital.png){width=100%}
 
-En adelante, "×" es el cociente geométrico medio del capital final entre dos agentes en las mismas series de test, con su intervalo de confianza bootstrap del 95%.
+"×": cociente geométrico medio del capital final entre dos agentes en las mismas series de test, con IC bootstrap del 95%. Los agentes de RL superan al aleatorio en todos los mercados (fuera del ciclo, este pierde un 15–24%).
 
-- **Ciclo: momentum con histéresis.** Q-learning y Sarsa superan a la regla de *momentum* (×1,37 [1,15; 1,61] para Sarsa) con un tercio de sus operaciones (31–33 frente a 92). Compran solo con tendencia muy positiva y no venden hasta que es muy negativa (Figura 2).
-- **Browniano: no operar.** Salvo 1 de las 10 semillas de Q-learning, los agentes no compran y evitan lo que pierden por comisiones las reglas (entre −12% y −15%). Frente a *buy & hold* no hay diferencia significativa (×1,01 [0,93; 1,10]).
-- **Reversión: contrarian selectivo.** Compran solo en los intervalos más bajistas y mantienen hasta los más alcistas: ×1,14 [1,09; 1,20] frente a la regla *contrarian*, con menos de un cuarto de sus operaciones.
-- **Regímenes: la volatilidad a través de la tendencia.** Compran con tendencia positiva moderada y venden solo ante movimientos extremos en cualquier dirección. El tamaño de la tendencia actúa como aproximación de la volatilidad, que separa el régimen alcista tranquilo del bajista volátil. La ventaja frente a no operar es pequeña pero significativa (Q-learning ×1,06 [1,03; 1,10]); frente a *buy & hold* y *momentum* es amplia (×1,38 y ×1,30).
+- **Ciclo: *momentum* con histéresis, el esperado.** Superan a *momentum* (Sarsa ×1,37 [1,15; 1,61]) y a B&H (×18) con un tercio de sus operaciones: compran con tendencia muy positiva y venden solo si es muy negativa (Fig. 2).
+- **Browniano: no operar, el esperado (con un matiz, §4).** Salvo 1 semilla de Q-learning, no compran, y evitan lo que pierden las reglas en comisiones (−12% a −15%). Frente a B&H, ×1,01 [0,93; 1,10].
+- **Reversión: *contrarian* selectivo, el esperado.** Compran en los intervalos más bajistas y mantienen hasta los más alcistas: ×1,14 [1,09; 1,20] frente a la regla *contrarian*, con un cuarto de sus operaciones, y ×1,24 frente a B&H.
+- **Regímenes: mejor de lo esperado.** Compran con tendencia positiva moderada y venden ante movimientos extremos en cualquier sentido: el tamaño de la tendencia aproxima la volatilidad, que separa el régimen alcista tranquilo del bajista volátil. Ganan a no operar (Q-learning ×1,06 [1,03; 1,10]) y con holgura a B&H y *momentum* (×1,38 y ×1,30).
 
-![Políticas aprendidas por Sarsa: fracción de las 10 semillas que está dentro del mercado en cada estado (intervalo de tendencia × posición). Las de Q-learning son muy parecidas.](figures/informe_politicas.png){width=78%}
+![Políticas de Sarsa: fracción de las 10 semillas dentro del mercado en cada estado (tendencia × posición, sin o con el activo). Las de Q-learning y MC son muy parecidas, salvo MC en regímenes, que apenas compra.](figures/informe_politicas.png){width=78%}
 
-**Q-learning frente a Sarsa.** No hay diferencias atribuibles al algoritmo. Con $\gamma = 0$ (ciclo y browniano) son el mismo, y sus pequeñas diferencias (×0,98) vienen del $\alpha$ elegido o del azar de una semilla. Con $\gamma > 0$ (reversión y regímenes) no son significativas. Una acción exploratoria cuesta como mucho una comisión: no hay un "acantilado" como en *Cliff Walking* que lleve a Sarsa a una política más prudente.
+**Q-learning, Sarsa y Monte Carlo.** Q-learning y Sarsa no difieren de forma significativa: con $\gamma = 0$ hacen la misma actualización, y explorar cuesta como mucho una comisión (no hay un "acantilado" como en *Cliff Walking*). Para MC aislamos el efecto del objetivo, el retorno real $G_t$ frente a $R_{t+1} + \gamma Q(S_{t+1}, A_{t+1})$, entrenándolo con los hiperparámetros de Sarsa. Con $\gamma = 0$ dan la misma política (×1,00). Con $\gamma = 0{,}5$ (reversión), MC mejora (×1,04 [1,02; 1,05]) y varía menos entre semillas (medianas del 22% al 28%, frente al 13–25% de Sarsa): no hace *bootstrap* sobre un estado no markoviano, al que le falta la distancia a la media. Con $\gamma = 0{,}99$ (regímenes) empeora (×0,94 [0,91; 0,97]), porque $G_t$ suma decenas de retornos ruidosos. Es el compromiso sesgo-varianza entre MC y TD visto en clase.
 
-**Convergencia.** Se alcanza entre los 200 y los 3700 episodios (2–30 s), según el mercado. Las configuraciones ajustadas convergen más despacio que las sin ajustar, porque su $\alpha$ es más pequeño. A cambio, terminan mejor en ciclo (×1,18–1,19) y en regímenes (×1,05).
+![Curvas de aprendizaje: mediana del retorno en validación (media de 10 semillas), cada 200 episodios; el punto marca la convergencia.](figures/informe_curvas.png){width=100%}
+
+**Convergencia (Figura 3).** Con un coste por episodio similar, el tiempo es proporcional a los episodios: TD converge en 200–3700 (2–30 s) y MC necesita más en tres mercados, y en regímenes aún mejora a los 4000 (otra cara de su varianza). El ajuste ralentiza a TD ($\alpha$ menores), pero mejora la configuración por defecto en ciclo (×1,18–1,19) y regímenes (×1,05).
 
 # 4. Análisis crítico y conclusiones
 
-- **Los agentes aprenden lo que hay que aprender.** Cuando hay señal, encuentran la estrategia esperada y la mejoran con histéresis. Cuando no la hay, no operan, que es lo correcto con comisiones.
-- **El ajuste en validación es optimista.** En reversión, la mejora vista en validación (26% frente a 19–21%) desaparece en test (×1,01 y ×1,03, no significativas): elegir la mejor de 35 configuraciones con 3 semillas sobreajusta a la validación. Además, el resultado depende mucho de la semilla: en reversión, la mediana de Q-learning va del 1% al 29%.
-- **Limitaciones.** Al estado le falta información clave: la distancia a la media de largo plazo (en reversión) y la volatilidad (en regímenes). Los mercados son simulados con parámetros y comisión fijos, y el ruido del 10% por paso del ciclo da retornos poco realistas.
-- **Además de lo pedido:** análisis previo de la señal, dos reglas de referencia más, ajuste por etapas, 10 semillas nuevas en test, intervalos de confianza pareados y criterio de convergencia explícito; código reproducible y con tests.
+- **Conclusión principal.** Con señal, los tres algoritmos encuentran la estrategia esperada y la mejoran con histéresis; sin señal, no operan. Las diferencias entre ellos se explican por la teoría (sesgo y varianza), no por el azar.
+- **Lo "esperado" depende de la métrica.** En el browniano, la recompensa del entorno (retorno simple) tiene esperanza positiva (+0,01% por paso), y para ella, con $\gamma$ alto, lo óptimo es B&H. Pero el log-retorno la tiene negativa $(\mu - \sigma^2/2 = -0{,}01\%)$ y la mediana del capital cae. Con $\gamma = 0{,}99$, 14 de 30 entrenamientos aprendieron B&H (media en validación de +9%, mediana negativa): elegir por mediana favorece no operar.
+- **El ajuste en validación es optimista.** En reversión, la mejora en validación (26% frente a 19–21%) desaparece en test (×1,01 y ×1,03, no significativas), y en ciclo el MC elegido rinde menos que con la configuración de Sarsa (×0,87): elegir entre muchas configuraciones con 3 semillas sobreajusta, y la semilla pesa mucho (Q-learning en reversión: del 1% al 29%).
+- **Limitaciones.** Al estado le faltan la distancia a la media y la volatilidad (ni MC lo compensa del todo); los mercados son simulados, con parámetros y comisión fijos, y el 10% de ruido del ciclo da retornos irreales.
+- **Además de lo pedido:** control MC con experimento controlado frente a Sarsa, análisis previo de la señal, dos reglas más, ajuste por etapas, 10 semillas nuevas en test, IC pareados, criterio de convergencia explícito y código reproducible con tests.

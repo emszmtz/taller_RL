@@ -1,0 +1,24 @@
+mercado,comparación,ratio,IC 95%,significativa
+ciclo,Monte Carlo vs Sarsa,0.8749443982718536,[0.75; 1.02],no
+ciclo,Monte Carlo vs Q-learning,0.8922913877395613,[0.77; 1.03],no
+ciclo,MC (config. Sarsa) vs Sarsa: solo cambia el objetivo,1.0000000000000002,[1.00; 1.00],no
+ciclo,Monte Carlo vs Buy & hold,15.8489981580261,[11.68; 21.27],sí
+ciclo,Monte Carlo vs Momentum (mejor regla),1.1966045517069837,[1.00; 1.43],sí
+ciclo,Monte Carlo vs no operar,567.4543077373622,[393.09; 808.81],sí
+browniano,Monte Carlo vs Sarsa,1.0,[1.00; 1.00],no
+browniano,Monte Carlo vs Q-learning,1.0167016591085416,[1.01; 1.02],sí
+browniano,MC (config. Sarsa) vs Sarsa: solo cambia el objetivo,1.0,[1.00; 1.00],no
+browniano,Monte Carlo vs Buy & hold,1.0125066225443013,[0.93; 1.10],no
+browniano,Monte Carlo vs no operar,1.0,[1.00; 1.00],no
+reversion,Monte Carlo vs Sarsa,1.0365700087437182,[1.02; 1.05],sí
+reversion,Monte Carlo vs Q-learning,1.0434326351906817,[1.02; 1.07],sí
+reversion,MC (config. Sarsa) vs Sarsa: solo cambia el objetivo,1.0365700087437182,[1.02; 1.05],sí
+reversion,Monte Carlo vs Buy & hold,1.284342935504197,[1.23; 1.34],sí
+reversion,Monte Carlo vs Contrarian (mejor regla),1.1842891643011308,[1.13; 1.24],sí
+reversion,Monte Carlo vs no operar,1.2599829799571338,[1.21; 1.31],sí
+regimenes,Monte Carlo vs Sarsa,0.9889848595116788,[0.96; 1.01],no
+regimenes,Monte Carlo vs Q-learning,0.9724558087924797,[0.96; 0.99],sí
+regimenes,MC (config. Sarsa) vs Sarsa: solo cambia el objetivo,0.9426070674653966,[0.91; 0.97],sí
+regimenes,Monte Carlo vs Buy & hold,1.3445407893214951,[1.24; 1.46],sí
+regimenes,Monte Carlo vs Momentum (mejor regla),1.268325508326946,[1.21; 1.32],sí
+regimenes,Monte Carlo vs no operar,1.0350404875145545,[1.01; 1.06],sí

@@ -1,0 +1,5 @@
+mercado,algoritmo,alpha,omega,gamma,n_intervalos,frac_decaimiento,eps_final,n_episodios,primera_visita,val_mediana,val_sharpe,val_operaciones
+ciclo,montecarlo,1.0,0.8,0.0,10,0.7,0.01,2000,True,78715.29673205125,3.141031052705691,32.03666666666666
+reversion,montecarlo,1.0,0.8,0.5,20,0.7,0.1,2000,False,26.63897768430679,0.6784812600289106,34.21
+regimenes,montecarlo,1.0,0.8,0.5,20,0.7,0.1,2000,True,1.4271245902022702,0.2003154868838152,28.386666666666667
+browniano,montecarlo,0.01,0.0,0.0,4,0.3,0.01,2000,False,0.0,0.0,0.0

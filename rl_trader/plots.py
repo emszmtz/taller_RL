@@ -1,6 +1,7 @@
 """Estilo común de las figuras del informe.
 
-Paleta: azul y naranja para Q-learning y Sarsa (validados para daltonismo),
+Paleta: azul, naranja y aqua para Q-learning, Sarsa y Monte Carlo (los tres
+primeros colores categóricos de la paleta de referencia, validados para daltonismo),
 tintas y rejilla neutras, y una escala de azules para magnitudes.
 """
 import matplotlib.pyplot as plt
@@ -8,15 +9,15 @@ import numpy as np
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import Rectangle
 
-AZUL, NARANJA = "#2a78d6", "#eb6834"
+AZUL, NARANJA, AQUA = "#2a78d6", "#eb6834", "#1baf7a"
 TINTA, TINTA_2, GRIS, REJILLA, EJE, FONDO = "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3c2b7", "#fcfcfb"
 AZULES = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"]
 SECUENCIAL = LinearSegmentedColormap.from_list("azules", AZULES)
 
 NOMBRES_MERCADO = {"ciclo": "1. Tendencia + ciclo", "browniano": "2. Browniano",
                    "reversion": "3. Reversión a la media", "regimenes": "4. Regímenes"}
-NOMBRES_ALGORITMO = {"qlearning": "Q-learning", "sarsa": "Sarsa"}
-COLORES_ALGORITMO = {"qlearning": AZUL, "sarsa": NARANJA}
+NOMBRES_ALGORITMO = {"qlearning": "Q-learning", "sarsa": "Sarsa", "montecarlo": "Monte Carlo"}
+COLORES_ALGORITMO = {"qlearning": AZUL, "sarsa": NARANJA, "montecarlo": AQUA}
 
 
 def aplicar_estilo():

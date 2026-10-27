@@ -1,6 +1,6 @@
 # Taller RL: agente de trading con Q-learning y Sarsa
 
-Taller de Aprendizaje por Refuerzo del MIAX-14. Entrenamos agentes tabulares (Q-learning, Sarsa y algún extra) que operan un único activo en el entorno `SimpleTradingEnv` del enunciado, y los comparamos con un agente aleatorio y con *buy & hold* en cuatro mercados simulados y en datos reales de EODHD.
+Taller de Aprendizaje por Refuerzo del MIAX-14. Entrenamos agentes tabulares (Q-learning, Sarsa y, como extra, control Monte Carlo) que operan un único activo en el entorno `SimpleTradingEnv` del enunciado, y los comparamos con un agente aleatorio y con *buy & hold* en cuatro mercados simulados y en datos reales de EODHD.
 
 El enunciado original está en [notebooks/00_enunciado_taller_trader.ipynb](notebooks/00_enunciado_taller_trader.ipynb).
 
@@ -93,7 +93,7 @@ Todos los agentes se evalúan sobre las mismas series de test. **No elijáis hip
 rl_trader/          Código compartido (importable)
   env.py            Entorno del enunciado, sin modificar
   prices.py         Los 4 generadores de precios del enunciado, sin modificar
-  agents.py         Discretización del estado, Q-learning y Sarsa
+  agents.py         Discretización del estado, Q-learning, Sarsa y control Monte Carlo
   baselines.py      Aleatorio, buy & hold, momentum y contrarian
   evaluation.py     Conjuntos de series y métricas
   experiments.py    Ejecución de configuraciones en paralelo y elección de la mejor
@@ -104,6 +104,8 @@ tests/              Comprobaciones rápidas (pytest)
 notebooks/          Análisis (uno por fase o tema)
 results/            Tablas de resultados (CSV)
 figures/            Figuras para el informe
+report/             Informe en Markdown (fuente única del PDF)
+entregable/         PDF final para entregar
 ```
 
 Los cálculos largos van en `scripts/` y guardan CSV en `results/`; los notebooks solo leen esos CSV, así que se ejecutan en segundos.
@@ -112,10 +114,11 @@ Los cálculos largos van en `scripts/` y guardan CSV en `results/`; los notebook
 |---|---|---|---|
 | `python scripts/fase2_ajuste.py` | ~40 min | `results/fase2_*.csv` | [notebooks/02_ajuste_hiperparametros.ipynb](notebooks/02_ajuste_hiperparametros.ipynb) |
 | `python scripts/fase3_resultados.py` | ~15 min | `results/fase3_*.csv` | [notebooks/03_resultados_test.ipynb](notebooks/03_resultados_test.ipynb) |
-
+| `python scripts/fase4_montecarlo.py` | ~47 min (16 procesos) | `results/fase4_mc_*.csv` | [notebooks/04_montecarlo.ipynb](notebooks/04_montecarlo.ipynb) |
 | `python scripts/figuras_informe.py` | segundos | `figures/informe_*.png` | el informe |
+| `python scripts/informe_pdf.py` | segundos | `entregable/informe_taller_RL.pdf` | — |
 
-El script de la fase 3 lee `results/fase2_mejores.csv`, así que depende del de la fase 2; el de las figuras del informe lee los resultados de la fase 3.
+Los scripts de las fases 3 y 4 leen `results/fase2_mejores.csv`, así que dependen del de la fase 2; el de las figuras del informe lee los resultados de las fases 3 y 4.
 
 ## Informe
 
@@ -126,6 +129,13 @@ pandoc report/informe.md -o report/informe.pdf --pdf-engine=xelatex --resource-p
 ```
 
 Hace falta [pandoc](https://pandoc.org) y una distribución de LaTeX con los paquetes `enumitem`, `caption` y `float`. Usa las fuentes Palatino y Helvetica Neue de macOS; en otro sistema, cambia `mainfont` y `sansfont` en la cabecera del `.md`. Después de editar, comprobad que sigue ocupando 2 páginas (`pdfinfo report/informe.pdf`).
+
+**Sin LaTeX** (por ejemplo, en Windows) se puede generar el PDF que se entrega a partir del mismo `informe.md`, con pandoc instalado desde pip y Edge o Chrome para imprimir:
+
+```bash
+pip install pypandoc_binary
+python scripts/informe_pdf.py        # -> entregable/informe_taller_RL.pdf
+```
 
 ## Cómo colaborar
 
@@ -139,5 +149,6 @@ Hace falta [pandoc](https://pandoc.org) y una distribución de LaTeX con los paq
 - [x] **Fase 1. Núcleo:** discretización de la tendencia, Q-learning, Sarsa, ε con decaimiento, baselines (aleatorio, buy & hold, reglas de momentum y contrarian), evaluación y métricas. Primera pasada en [notebooks/01_primera_pasada.ipynb](notebooks/01_primera_pasada.ipynb).
 - [x] **Fase 2. Ajuste:** α, ε, γ, número de intervalos y de episodios, evaluados sobre series de validación. Configuraciones elegidas en `results/fase2_mejores.csv`; usar 4000 episodios. Análisis en [notebooks/02_ajuste_hiperparametros.ipynb](notebooks/02_ajuste_hiperparametros.ipynb).
 - [x] **Fase 3. Resultados:** 10 semillas nuevas, 100 series de test por mercado, tabla comparativa (`results/fase3_tabla.csv`), comparaciones con intervalos de confianza (`results/fase3_comparaciones.csv`), curvas de aprendizaje y mapas de política. Análisis en [notebooks/03_resultados_test.ipynb](notebooks/03_resultados_test.ipynb).
-- [ ] **Fase 4. Extras:** datos reales (EODHD), sensibilidad a comisiones frente a γ, Expected Sarsa o control Monte Carlo, estado con más información.
-- [ ] **Fase 5. Informe:** PDF de 2 páginas con diseño, resultados y análisis crítico. Borrador en [report/informe.pdf](report/informe.pdf).
+- [x] **Fase 4. Extra: control Monte Carlo on-policy** (slides 2), primera visita y todas las visitas, con el mismo protocolo de ajuste y test que Q-learning y Sarsa, y un experimento controlado con los hiperparámetros de Sarsa. Análisis en [notebooks/04_montecarlo.ipynb](notebooks/04_montecarlo.ipynb).
+- [ ] **Otros extras posibles:** datos reales (EODHD), sensibilidad a comisiones frente a γ, estado con más información.
+- [ ] **Fase 5. Informe:** PDF de 2 páginas con diseño, resultados y análisis crítico. Fuente en [report/informe.md](report/informe.md); PDF para entregar en [entregable/informe_taller_RL.pdf](entregable/informe_taller_RL.pdf).

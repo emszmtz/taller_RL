@@ -1,4 +1,5 @@
-"""Agentes tabulares: discretización del estado, Q-learning y Sarsa (slides 3)."""
+"""Agentes tabulares: discretización del estado, Q-learning y Sarsa (slides 3) y
+control Monte Carlo on-policy (slides 2)."""
 import bisect
 import time
 from dataclasses import dataclass
@@ -10,7 +11,7 @@ from .env import SimpleTradingEnv
 from .evaluation import N_STEPS, SEMILLA_DISCRETIZADOR, evaluar, generar_series, semilla_entrenamiento
 
 N_ACCIONES = 3  # 0 = vender, 1 = mantener, 2 = comprar
-ALGORITMOS = ("qlearning", "sarsa")
+ALGORITMOS = ("qlearning", "sarsa", "montecarlo")
 
 
 def tendencias(precios):
@@ -115,6 +116,29 @@ def episodio_convergencia(validacion, columna="retorno_mediana_pct", tol_rel=0.1
     return int(validacion["episodio"].iloc[k])
 
 
+def actualizar_montecarlo(Q, visitas, trayectoria, alpha, omega, gamma, primera_visita=False):
+    """Actualización de control MC on-policy al final de un episodio (slides 2).
+
+    Recorre la trayectoria [(s, a, r), ...] hacia atrás con G ← γG + R y mueve
+    Q(s, a) hacia G con α = alpha / n(s,a)**omega. Con alpha = 1 y omega = 1, Q(s, a)
+    es el promedio de los retornos observados, como en el algoritmo de las slides.
+    Con primera_visita solo cuenta la primera aparición de cada par en el episodio
+    (first-visit); si no, todas (every-visit).
+    """
+    if primera_visita:
+        primera = {}
+        for t, (s, a, _) in enumerate(trayectoria):
+            primera.setdefault((s, a), t)
+    G = 0.0
+    for t in range(len(trayectoria) - 1, -1, -1):
+        s, a, r = trayectoria[t]
+        G = gamma * G + r
+        if primera_visita and primera[(s, a)] != t:
+            continue
+        visitas[s, a] += 1
+        Q[s, a] += alpha / visitas[s, a] ** omega * (G - Q[s, a])
+
+
 @dataclass
 class Resultado:
     algoritmo: str
@@ -132,16 +156,23 @@ class Resultado:
 
 def entrenar(algoritmo, generador, discretizador, n_episodios=2000, n_steps=N_STEPS,
              alpha=0.05, omega=0.0, gamma=0.9, eps_inicial=1.0, eps_final=0.01,
-             frac_decaimiento=0.7, seed=0, series_validacion=None, evaluar_cada=100):
-    """Entrena Q-learning o Sarsa tabular; cada episodio usa una serie nueva del generador.
+             frac_decaimiento=0.7, seed=0, series_validacion=None, evaluar_cada=100,
+             primera_visita=False):
+    """Entrena Q-learning, Sarsa o control Monte Carlo tabular; cada episodio usa una
+    serie nueva del generador.
 
     La tasa de aprendizaje es α = alpha / n(s,a)**omega, con n(s,a) el número de
     visitas al par contando la actual. omega = 0 da α constante; con
     0.5 < omega <= 1 se cumplen las condiciones de convergencia Σα = ∞, Σα² < ∞.
+
+    Monte Carlo usa la misma política ε-greedy, pero no actualiza Q hasta acabar el
+    episodio, con el retorno real G en vez de un objetivo con bootstrap.
+    primera_visita solo afecta a Monte Carlo.
     """
     if algoritmo not in ALGORITMOS:
         raise ValueError(f"algoritmo debe ser uno de {ALGORITMOS}")
     sarsa = algoritmo == "sarsa"
+    montecarlo = algoritmo == "montecarlo"
     rng = np.random.default_rng(seed)
     Q = np.zeros((discretizador.n_estados, N_ACCIONES))
     visitas = np.zeros_like(Q)
@@ -157,10 +188,17 @@ def entrenar(algoritmo, generador, discretizador, n_episodios=2000, n_steps=N_ST
         s = discretizador(obs)
         a = accion_epsilon_greedy(Q[s], eps, rng)
         suma_recompensas, done = 0.0, False
+        trayectoria = []  # (s, a, r) del episodio, solo para Monte Carlo
 
         while not done:
             obs, r, done, _, _ = env.step(a)
             s2 = discretizador(obs)
+            if montecarlo:
+                # Q no cambia hasta acabar el episodio: la política es fija durante él
+                trayectoria.append((s, a, r))
+                s, a = s2, accion_epsilon_greedy(Q[s2], eps, rng)
+                suma_recompensas += r
+                continue
             if sarsa:
                 a2 = accion_epsilon_greedy(Q[s2], eps, rng)
                 siguiente = Q[s2, a2]
@@ -174,6 +212,9 @@ def entrenar(algoritmo, generador, discretizador, n_episodios=2000, n_steps=N_ST
                 a2 = accion_epsilon_greedy(Q[s2], eps, rng)
             s, a = s2, a2
             suma_recompensas += r
+
+        if montecarlo:
+            actualizar_montecarlo(Q, visitas, trayectoria, alpha, omega, gamma, primera_visita)
 
         historial.append({
             "episodio": ep,
