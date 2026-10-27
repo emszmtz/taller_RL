@@ -19,14 +19,13 @@ import pandas as pd
 from rl_trader.agents import episodio_convergencia, episodio_estable, politica_dentro
 from rl_trader.baselines import BASELINES
 from rl_trader.evaluation import SEMILLA_TEST, evaluar, generar_series
-from rl_trader.experiments import HIPERPARAMETROS, N_TEST, ejecutar_varios
+from rl_trader.experiments import CONFIG_SIN_AJUSTAR, HIPERPARAMETROS, N_TEST, ejecutar_varios
 from rl_trader.prices import GENERADORES
 
 RESULTADOS = Path(__file__).resolve().parent.parent / "results"
 SEMILLAS = range(100, 110)
 EPISODIOS = 4000
-SIN_AJUSTAR = dict(alpha=1.0, omega=0.6, gamma=0.9, n_intervalos=10, frac_decaimiento=0.7, eps_final=0.01,
-                   n_episodios=2000)
+SIN_AJUSTAR = CONFIG_SIN_AJUSTAR
 COMUN = dict(eps_inicial=1.0, evaluar_cada=200, n_validacion=100)
 
 

@@ -146,6 +146,34 @@ def test_elegir_mejores_promedia_semillas_y_desempata_por_operaciones():
     assert len(mejor) == 1 and mejor.loc[0, "gamma"] == 0.9
 
 
+def test_generador_ventanas_reproducible_y_dentro_de_rango():
+    from rl_trader.real import GeneradorVentanas
+    gen = GeneradorVentanas(np.arange(1000.0) + 1)
+    np.random.seed(3)
+    a = gen(n_steps=500)
+    np.random.seed(3)
+    b = gen(n_steps=500)
+    assert len(a) == 500 and np.array_equal(a, b)
+    assert np.all(np.diff(a) == 1) and 1 <= a[0] and a[-1] <= 1000
+
+
+def test_discretizador_desde_series():
+    disc = Discretizador.desde_series([100 + np.cumsum(np.random.default_rng(0).normal(size=800))], n_intervalos=6)
+    assert disc.n_intervalos == 6 and disc.cortes[2] == 0.0
+    np.testing.assert_allclose(disc.cortes[:2], -np.array(disc.cortes[3:][::-1]))
+
+
+def test_politica_desde_cadena_reproduce_la_greedy():
+    from rl_trader.real import GeneradorVentanas, politica_desde_cadena
+    precios = 100 + 10 * np.sin(np.arange(1500) / 7) + np.random.default_rng(1).normal(size=1500)
+    disc = Discretizador.desde_series([precios], n_intervalos=6)
+    res = entrenar("qlearning", GeneradorVentanas(precios), disc, n_episodios=30, alpha=1.0, omega=0.6)
+    reconstruida = politica_desde_cadena("".join(map(str, politica_dentro(res.Q))), disc.cortes)
+    original, _ = ejecutar_episodio(precios, res.politica())
+    copia, _ = ejecutar_episodio(precios, reconstruida)
+    np.testing.assert_allclose(original, copia)
+
+
 def _seno(n_steps=500):
     return 100 + 10 * np.sin(2 * np.pi * np.arange(n_steps) / 40)
 

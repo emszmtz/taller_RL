@@ -99,6 +99,7 @@ rl_trader/          Código compartido (importable)
   experiments.py    Ejecución de configuraciones en paralelo y elección de la mejor
   plots.py          Estilo común de las figuras (paleta, mapas de calor)
   data.py           Descarga de precios reales desde EODHD
+  real.py           Activos reales, ventanas de entrenamiento y evaluación en test
 scripts/            Cálculos largos que guardan resultados en results/
 tests/              Comprobaciones rápidas (pytest)
 notebooks/          Análisis (uno por fase o tema)
@@ -115,10 +116,11 @@ Los cálculos largos van en `scripts/` y guardan CSV en `results/`; los notebook
 | `python scripts/fase2_ajuste.py` | ~40 min | `results/fase2_*.csv` | [notebooks/02_ajuste_hiperparametros.ipynb](notebooks/02_ajuste_hiperparametros.ipynb) |
 | `python scripts/fase3_resultados.py` | ~15 min | `results/fase3_*.csv` | [notebooks/03_resultados_test.ipynb](notebooks/03_resultados_test.ipynb) |
 | `python scripts/fase4_montecarlo.py` | ~47 min (16 procesos) | `results/fase4_mc_*.csv` | [notebooks/04_montecarlo.ipynb](notebooks/04_montecarlo.ipynb) |
+| `python scripts/datos_reales.py` | ~10 min | `results/reales_*.csv` | [notebooks/05_datos_reales.ipynb](notebooks/05_datos_reales.ipynb) |
 | `python scripts/figuras_informe.py` | segundos | `figures/informe_*.png` | el informe |
 | `python scripts/informe_pdf.py` (sin LaTeX) | segundos | `report/informe_sin_latex.pdf` | — |
 
-Los scripts de las fases 3 y 4 leen `results/fase2_mejores.csv`, así que dependen del de la fase 2; el de las figuras del informe lee los resultados de las fases 3 y 4.
+Los scripts de las fases 3 y 4 y el de datos reales leen `results/fase2_mejores.csv`, así que dependen del de la fase 2; el de las figuras del informe lee los resultados de las fases 3 y 4. El de datos reales necesita la clave de EODHD en `.env` la primera vez (descarga los precios a `data/`); en `results/` solo guarda fechas, métricas y políticas, nunca precios.
 
 ## Informe
 
@@ -154,5 +156,6 @@ pip install pypandoc_binary    # pandoc queda en python -c "import pypandoc; pri
 - [x] **Fase 2. Ajuste:** α, ε, γ, número de intervalos y de episodios, evaluados sobre series de validación. Configuraciones elegidas en `results/fase2_mejores.csv`; usar 4000 episodios. Análisis en [notebooks/02_ajuste_hiperparametros.ipynb](notebooks/02_ajuste_hiperparametros.ipynb).
 - [x] **Fase 3. Resultados:** 10 semillas nuevas, 100 series de test por mercado, tabla comparativa (`results/fase3_tabla.csv`), comparaciones con intervalos de confianza (`results/fase3_comparaciones.csv`), curvas de aprendizaje y mapas de política. Análisis en [notebooks/03_resultados_test.ipynb](notebooks/03_resultados_test.ipynb).
 - [x] **Fase 4. Extra: control Monte Carlo on-policy** (slides 2), primera visita y todas las visitas, con el mismo protocolo de ajuste y test que Q-learning y Sarsa, y un experimento controlado con los hiperparámetros de Sarsa. Análisis en [notebooks/04_montecarlo.ipynb](notebooks/04_montecarlo.ipynb).
-- [ ] **Otros extras posibles:** datos reales (EODHD), sensibilidad a comisiones frente a γ, estado con más información.
+- [x] **Extra: datos reales (EODHD).** S&P 500, IBEX 35, Bitcoin y EUR/USD; entrenamiento con ventanas de 500 días hasta 2018 y test con todo el periodo desde 2019. Sin ajuste con datos reales: configuraciones sin ajustar y de regímenes, 10 semillas. Análisis en [notebooks/05_datos_reales.ipynb](notebooks/05_datos_reales.ipynb).
+- [ ] **Otros extras posibles:** sensibilidad a comisiones frente a γ, estado con más información.
 - [ ] **Fase 5. Informe:** PDF de 2 páginas con diseño, resultados y análisis crítico. Fuente en [report/informe.md](report/informe.md); PDF para entregar en [entregable/informe_taller_RL.pdf](entregable/informe_taller_RL.pdf).

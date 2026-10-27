@@ -38,9 +38,14 @@ class Discretizador:
 
     @classmethod
     def ajustar(cls, generador, n_intervalos=10, n_series=50, n_steps=N_STEPS):
+        """Cortes a partir de n_series series del generador (semillas reservadas)."""
+        return cls.desde_series(generar_series(generador, n_series, SEMILLA_DISCRETIZADOR, n_steps), n_intervalos)
+
+    @classmethod
+    def desde_series(cls, series, n_intervalos=10):
+        """Cortes a partir de series de precios ya dadas (p. ej., el periodo de entrenamiento de un activo real)."""
         if n_intervalos < 2 or n_intervalos % 2:
             raise ValueError("n_intervalos debe ser par (y al menos 2) para que el 0 sea un corte")
-        series = generar_series(generador, n_series, SEMILLA_DISCRETIZADOR, n_steps)
         absolutas = np.abs(np.concatenate([tendencias(p) for p in series]))
         mitad = n_intervalos // 2
         qs = np.quantile(absolutas, np.arange(1, mitad) / mitad)

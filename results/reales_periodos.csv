@@ -1,0 +1,5 @@
+activo,ticker,nombre,inicio_entrenamiento,fin_entrenamiento,dias_entrenamiento,inicio_test,fin_test,dias_test
+sp500,SPY.US,S&P 500 (SPY),2005-01-03,2018-12-31,3523,2019-01-02,2026-10-26,1965
+ibex,IBEX.INDX,IBEX 35,2005-01-03,2018-12-31,3571,2019-01-02,2026-10-27,2010
+bitcoin,BTC-USD.CC,Bitcoin,2014-01-01,2018-12-31,1826,2019-01-01,2026-10-27,2857
+eurusd,EURUSD.FOREX,EUR/USD,2005-01-03,2018-12-31,3651,2019-01-01,2026-10-26,2151

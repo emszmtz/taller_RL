@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import Rectangle
+from matplotlib.ticker import FixedLocator, FuncFormatter, NullFormatter
 
 AZUL, NARANJA, AQUA = "#2a78d6", "#eb6834", "#1baf7a"
 TINTA, TINTA_2, GRIS, REJILLA, EJE, FONDO = "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3c2b7", "#fcfcfb"
@@ -38,6 +39,22 @@ def compacto(x, _=None):
     if abs(x) >= 1e3:
         return f"{x / 1e3:g}K"
     return f"{x:g}"
+
+
+def formato_log(eje):
+    """Etiquetas sin notación científica en un eje logarítmico (ax.xaxis o ax.yaxis).
+
+    Llamar después de dibujar. Si el rango es estrecho (menos de ×5), etiqueta
+    también marcas intermedias, para que no quede una sola etiqueta.
+    """
+    lo, hi = sorted(eje.get_view_interval())
+    eje.set_major_formatter(FuncFormatter(lambda x, _: f"{x:g}"))
+    if hi / lo < 5:
+        intermedias = [0.5, 0.6, 0.7, 0.8, 0.9, 1.2, 1.5, 2, 3, 4]
+        eje.set_minor_locator(FixedLocator([v for v in intermedias if lo <= v <= hi]))
+        eje.set_minor_formatter(FuncFormatter(lambda x, _: f"{x:g}"))
+    else:
+        eje.set_minor_formatter(NullFormatter())
 
 
 def corto(x):

@@ -17,6 +17,10 @@ N_TEST = 100
 
 HIPERPARAMETROS = ["alpha", "omega", "gamma", "n_intervalos", "frac_decaimiento", "eps_final", "n_episodios"]
 
+# Configuración por defecto de la primera pasada (fase 1), sin ajustar
+CONFIG_SIN_AJUSTAR = dict(alpha=1.0, omega=0.6, gamma=0.9, n_intervalos=10, frac_decaimiento=0.7, eps_final=0.01,
+                          n_episodios=2000)
+
 
 def ejecutar(config, en_test=False):
     """Entrena un agente y lo evalúa en validación y, si en_test, también en test.
@@ -43,9 +47,13 @@ def _ejecutar_en_test(config):
     return ejecutar(config, en_test=True)
 
 
-def ejecutar_varios(configs, en_test=False, procesos=None):
-    """Ejecuta varias configuraciones en paralelo (un proceso por núcleo por defecto)."""
-    funcion = _ejecutar_en_test if en_test else ejecutar
+def ejecutar_varios(configs, en_test=False, procesos=None, funcion=None):
+    """Ejecuta varias configuraciones en paralelo (un proceso por núcleo por defecto).
+
+    funcion: la que recibe cada configuración; por defecto, ejecutar (mercados simulados).
+    """
+    if funcion is None:
+        funcion = _ejecutar_en_test if en_test else ejecutar
     with ProcessPoolExecutor(max_workers=procesos or os.cpu_count()) as pool:
         return list(pool.map(funcion, configs))
 
