@@ -1,20 +1,26 @@
-"""Barrido fino del ε final de ε-greedy, solo en validación (no toca el test).
+"""¿Cuánto debería explorar el agente al final del entrenamiento? Barrido del ε final.
 
-Para reversión y regímenes, con Q-learning y Sarsa: parte de la configuración elegida en la
-fase 2 (results/fase2_mejores.csv), con 4000 episodios, y cambia solo el ε final. ε baja
-exponencialmente de 1 a ese valor durante la fracción de episodios elegida en la fase 2 y
-después se queda fijo.
+Durante el entrenamiento, ε (la probabilidad de elegir una acción al azar) baja
+de 1 hasta un valor final y después se queda ahí. Este script prueba varios
+valores de ese ε final, solo en validación: el test no se toca.
 
-10 semillas nuevas (200-209). Con la misma semilla, todos los valores de ε ven las mismas
-series de entrenamiento, así que se comparan por parejas; la evaluación usa las mismas 100
-series de validación de las fases anteriores.
+Se hace para los mercados de reversión y de regímenes, con Q-learning y Sarsa.
+Se parte de la configuración elegida en la fase 2 (results/fase2_mejores.csv),
+con 4000 episodios, y solo se cambia el ε final. En lo que sigue, "desplegado"
+es el ε final de esa configuración, el que se usó en los resultados de test.
 
-No se prueba ε final = 0: con la fórmula exponencial, ε caería a 0 tras el primer episodio.
+Se usan 10 semillas nuevas (de la 200 a la 209). Con la misma semilla, todos los
+valores de ε ven las mismas series de entrenamiento, así que se pueden comparar
+por parejas. La evaluación usa las mismas 100 series de validación de siempre.
 
-Uso, desde la raíz del repositorio:  python scripts/barrido_epsilon.py
-Con 10 núcleos tarda unos 12 minutos. Si results/eps_barrido.csv existe, no se vuelve a entrenar.
-Guarda results/eps_barrido.csv (un entrenamiento por fila), results/eps_barrido_resumen.csv
-y figures/eps_barrido.png.
+No se prueba ε final = 0: con la fórmula exponencial, ε caería a 0 justo
+después del primer episodio y el agente casi no exploraría.
+
+Para lanzarlo, desde la raíz del repositorio:  python scripts/barrido_epsilon.py
+
+Con 10 núcleos tarda unos 12 minutos. Si results/eps_barrido.csv ya existe, no
+se vuelve a entrenar. Guarda results/eps_barrido.csv (un entrenamiento por fila),
+results/eps_barrido_resumen.csv y figures/eps_barrido.png.
 """
 import time
 from pathlib import Path
@@ -32,12 +38,18 @@ RESULTADOS, FIGURAS = ROOT / "results", ROOT / "figures"
 MERCADOS = ("reversion", "regimenes")
 ALGORITMOS = ("qlearning", "sarsa")
 SEMILLAS = range(200, 210)
+# Los valores de ε final que se prueban
 EPS_FINAL = [0.001, 0.01, 0.03, 0.1, 0.3]
 EPISODIOS = 4000
 
 
 def entrenar_todo():
-    """Un entrenamiento por (mercado, algoritmo, ε final, semilla). Devuelve (tabla, ε final desplegado)."""
+    """Entrena un agente por cada combinación de mercado, algoritmo, ε final y semilla.
+
+    Devuelve una tabla con una fila por entrenamiento y sus resultados en
+    validación. La columna "desplegado" marca las filas cuyo ε final es el de la
+    configuración elegida en la fase 2.
+    """
     mejores = pd.read_csv(RESULTADOS / "fase2_mejores.csv")
     mejores = mejores[mejores.mercado.isin(MERCADOS) & mejores.algoritmo.isin(ALGORITMOS)]
     configs, desplegado = [], {}
@@ -66,7 +78,12 @@ def entrenar_todo():
 
 
 def resumir(runs):
-    """Media y desviación entre semillas y diferencia pareada frente al ε final desplegado."""
+    """Resume el barrido: una fila por mercado, algoritmo y ε final.
+
+    Para cada ε final da la media de las 10 semillas y cuánto varía entre ellas, y
+    lo compara con el ε desplegado semilla a semilla. Si el intervalo de confianza
+    de esa diferencia no incluye el 0, se marca como significativa.
+    """
     filas = []
     for (m, a), d in runs.groupby(["mercado", "algoritmo"]):
         base = d[d.desplegado].sort_values("seed")["val_mediana"].to_numpy()
@@ -83,6 +100,7 @@ def resumir(runs):
 
 
 def figura(resumen):
+    """Dibuja un panel por mercado y algoritmo: la mediana en validación según el ε final."""
     aplicar_estilo()
     fig, axes = plt.subplots(1, 4, figsize=(13, 3.3), sharex=True)
     pares = [(m, a) for m in MERCADOS for a in ALGORITMOS]

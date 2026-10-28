@@ -1,7 +1,8 @@
-"""Generadores de precios del enunciado (taller_trader.ipynb), copiados sin cambios.
+"""Los cuatro generadores de precios del enunciado (taller_trader.ipynb), copiados tal cual.
 
-Usan el generador aleatorio global de NumPy: fija np.random.seed(...) antes de
-generar una serie si necesitas que sea reproducible.
+Cada uno simula un tipo de mercado distinto y sirve para fabricar todas las
+series que se quieran. Usan el azar global de NumPy, así que, para obtener
+siempre la misma serie, hay que fijar antes np.random.seed(...).
 """
 import numpy as np
 
@@ -84,7 +85,7 @@ def generar_precios_regimenes(n_steps=1000, start_price=100.0):
     return precios
 
 
-# Los cuatro mercados que hay que probar como mínimo, por nombre corto.
+# Los cuatro mercados que pide el enunciado, para poder elegirlos por un nombre corto
 GENERADORES = {
     "ciclo": generar_precios,
     "browniano": generar_precios_browniano,

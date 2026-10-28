@@ -1,15 +1,22 @@
-"""Fase 3: evaluación final en test.
+"""Fase 3: la evaluación final, en las series de test.
 
-Entrena con 10 semillas nuevas (100–109, distintas de las usadas en el ajuste):
-- las configuraciones elegidas en la fase 2 (results/fase2_mejores.csv), con 4000 episodios;
-- la configuración sin ajustar de la fase 1, con 2000 episodios, para ver qué aporta el ajuste.
+Los agentes se entrenan de nuevo con 10 semillas que no se usaron en el ajuste
+(de la 100 a la 109), en dos versiones:
 
-Después evalúa cada agente, y las políticas de referencia, en las 100 series
-de test de cada mercado: las mismas para todos.
+- la ajustada: la configuración ganadora de la fase 2 (results/fase2_mejores.csv),
+  entrenada durante 4000 episodios;
+- la sin ajustar: la configuración de partida de la fase 1, con 2000 episodios.
+  Comparar las dos muestra cuánto aporta el ajuste.
 
-Uso, desde la raíz del repositorio:  python scripts/fase3_resultados.py
-Si los resultados ya existen en results/, no se repite (bórralos para recalcular).
-Con 10 núcleos tarda unos 15 minutos.
+Después se prueba cada agente, junto con las estrategias de referencia
+(aleatoria, buy & hold, momentum y contrarian), en las 100 series de test de
+cada mercado. Las series son las mismas para todos, así que la comparación es
+justa.
+
+Para lanzarlo, desde la raíz del repositorio:  python scripts/fase3_resultados.py
+
+Si los resultados ya están en results/, no se vuelve a calcular (hay que
+borrarlos para repetirlo). Con 10 núcleos tarda unos 15 minutos.
 """
 import time
 from pathlib import Path
@@ -23,14 +30,22 @@ from rl_trader.experiments import CONFIG_SIN_AJUSTAR, HIPERPARAMETROS, N_TEST, e
 from rl_trader.prices import GENERADORES
 
 RESULTADOS = Path(__file__).resolve().parent.parent / "results"
+# Semillas nuevas, distintas de las del ajuste (0, 1 y 2)
 SEMILLAS = range(100, 110)
+# Duración del entrenamiento de la versión ajustada
 EPISODIOS = 4000
 SIN_AJUSTAR = CONFIG_SIN_AJUSTAR
+# Parámetros comunes a todos los entrenamientos: cada 200 episodios se mira la
+# validación para dibujar la curva de aprendizaje
 COMUN = dict(eps_inicial=1.0, evaluar_cada=200, n_validacion=100)
 
 
 def configuraciones():
-    """Lista de (variante, config) con todas las semillas."""
+    """Prepara la lista de entrenamientos: cada agente, en sus dos versiones y con cada semilla.
+
+    Devuelve parejas (versión, configuración), donde la versión es "ajustado" o
+    "sin ajustar".
+    """
     salida = []
     for f in pd.read_csv(RESULTADOS / "fase2_mejores.csv").itertuples():
         ajustada = {k: getattr(f, k) for k in HIPERPARAMETROS} | {"n_episodios": EPISODIOS}
@@ -50,6 +65,8 @@ def main():
     salidas = ejecutar_varios(list(configs), en_test=True)
     print(f"{len(configs)} entrenamientos en {(time.perf_counter() - t0) / 60:.1f} min")
 
+    # De cada entrenamiento se guarda su resultado en cada serie de test y un
+    # resumen: hiperparámetros, tiempo, cuándo convergió y la política aprendida
     test, runs, curvas = [], [], []
     for run, (variante, s) in enumerate(zip(variantes, salidas)):
         c, res = s["config"], s["resultado"]
@@ -67,7 +84,9 @@ def main():
         })
         curvas.append(res.validacion.assign(run=run))
 
-    # Políticas de referencia sobre las mismas series de test
+    # Las estrategias de referencia, en las mismas series de test. La aleatoria se
+    # repite con las 10 semillas porque cada una da un resultado distinto; las
+    # demás no tienen azar y basta con probarlas una vez.
     for mercado, generador in GENERADORES.items():
         series = generar_series(generador, N_TEST, SEMILLA_TEST)
         for nombre, fabrica in BASELINES.items():

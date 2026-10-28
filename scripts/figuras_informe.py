@@ -1,11 +1,11 @@
-"""Figuras del informe (versiones compactas, a la anchura de una página A4).
+"""Dibuja las figuras del informe, en tamaño pequeño para que quepan en una página A4.
 
 Lee los resultados de las fases 3 y 4 (results/fase3_*.csv, results/fase4_mc_*.csv) y guarda en figures/:
-- informe_capital.png: capital final por agente y mercado.
-- informe_politicas.png: políticas aprendidas por Sarsa (fracción de semillas dentro).
+- informe_capital.png: con cuánto capital acaba cada agente en cada mercado, como múltiplo del inicial.
+- informe_politicas.png: qué ha aprendido Sarsa (en cada estado, en qué fracción de las semillas decide estar dentro).
 - informe_curvas.png: curvas de aprendizaje en validación de Q-learning, Sarsa y Monte Carlo.
 
-Uso, desde la raíz del repositorio:  python scripts/figuras_informe.py  (unos segundos)
+Para lanzarlo, desde la raíz del repositorio:  python scripts/figuras_informe.py  (tarda unos segundos)
 """
 from pathlib import Path
 
@@ -21,7 +21,7 @@ from rl_trader.prices import GENERADORES
 ROOT = Path(__file__).resolve().parent.parent
 RESULTADOS, FIGURAS = ROOT / "results", ROOT / "figures"
 BLANCO = "white"
-ANCHO = 6.95  # pulgadas: ancho de texto de un A4 con márgenes de 1,6 cm
+ANCHO = 6.95  # en pulgadas: el ancho del texto en un A4 con márgenes de 1,6 cm
 TITULOS = {"ciclo": "1. Tendencia + ciclo", "browniano": "2. Browniano",
            "reversion": "3. Reversión", "regimenes": "4. Regímenes"}
 MERCADOS = list(TITULOS)
@@ -33,6 +33,7 @@ COLORES = {"qlearning": AZUL, "sarsa": NARANJA, "montecarlo": AQUA}
 
 
 def estilo_compacto():
+    """El estilo común, con la letra más pequeña para que las figuras quepan en el informe."""
     aplicar_estilo()
     # Fondo blanco: sobre papel, el casi blanco de pantalla se ve como un recuadro gris
     plt.rcParams.update({"font.size": 7.5, "axes.titlesize": 8, "xtick.labelsize": 7, "ytick.labelsize": 7,
@@ -41,11 +42,17 @@ def estilo_compacto():
 
 
 def coma(x):
-    """Decimales con coma, como en el texto del informe."""
+    """Escribe un número con coma decimal, como en el texto del informe: 1.5 → "1,5"."""
     return f"{x:g}".replace(".", ",")
 
 
 def marcas_log(ax):
+    """Elige qué marcas poner en un eje x logarítmico y cómo escribirlas.
+
+    Si el eje abarca mucho (más de 30 veces entre el mínimo y el máximo), pone una
+    marca en cada potencia de 10; si abarca poco, pone marcas intermedias como 0,8
+    o 1,5.
+    """
     lo, hi = ax.get_xlim()
     if hi / lo > 30:
         candidatas = [0.01, 0.1, 1, 10, 100, 1000, 10000]
@@ -59,6 +66,11 @@ def marcas_log(ax):
 
 
 def figura_capital(test):
+    """Figura 1: el capital final de cada agente en cada mercado, en las series de test.
+
+    El punto es la mediana y la barra va del percentil 25 al 75. El eje está en
+    escala logarítmica y la línea vertical marca el capital inicial (×1).
+    """
     fig, axes = plt.subplots(1, 4, figsize=(ANCHO, 1.6), sharey=True, gridspec_kw={"width_ratios": [1.3, 1, 1, 1]})
     y = np.arange(len(AGENTES))[::-1]
     for ax, m in zip(axes, MERCADOS):
@@ -82,6 +94,12 @@ def figura_capital(test):
 
 
 def efectiva(cadena):
+    """Convierte una política guardada (cadena de ceros y unos) en la que de verdad se aplica.
+
+    Si en ningún estado sin el activo decide comprar, el agente nunca llega a
+    tenerlo, así que lo aprendido para los estados con el activo no se usa nunca:
+    se pone a 0 (fuera) para que la figura no lo muestre.
+    """
     v = np.array(list(cadena), dtype=int)
     if not v[0::2].any():
         v[1::2] = 0
@@ -89,6 +107,12 @@ def efectiva(cadena):
 
 
 def figura_politicas(runs, agente="sarsa"):
+    """Figura 2: lo que ha aprendido el agente (Sarsa, si no se indica otro) en cada mercado.
+
+    Cada casilla es un estado: la fila es el intervalo de tendencia y la columna
+    dice si tiene el activo ("sin" o "con"). El color indica en qué fracción de las
+    10 semillas la política decide estar dentro en ese estado.
+    """
     # Se dibuja a su tamaño final (78% del ancho de texto) para que la letra impresa sea la real
     fig, axes = plt.subplots(1, 4, figsize=(0.78 * ANCHO, 1.45), gridspec_kw={"wspace": 0.9})
     for ax, m in zip(axes, MERCADOS):
@@ -145,6 +169,7 @@ def main():
     estilo_compacto()
     test = pd.concat([pd.read_csv(RESULTADOS / "fase3_test_por_serie.csv"),
                       pd.read_csv(RESULTADOS / "fase4_mc_test_por_serie.csv")])
+    # El capital final como múltiplo del inicial, en logaritmo
     test["log_capital"] = np.log1p(test["retorno_pct"] / 100)
     runs = pd.read_csv(RESULTADOS / "fase3_entrenamientos.csv", dtype={"politica": str})
     figura_capital(test)

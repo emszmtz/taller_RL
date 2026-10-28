@@ -1,7 +1,11 @@
-"""Entorno de trading del enunciado (taller_trader.ipynb), copiado sin cambios.
+"""El entorno de trading del enunciado (taller_trader.ipynb), copiado tal cual.
 
-No modificar: todos los agentes se entrenan y evalúan sobre este entorno para
-que los resultados sean comparables con los del enunciado.
+Es el "mundo" en el que actúa el agente: en cada paso le enseña la tendencia de
+los últimos precios y si tiene o no el activo, recibe su acción (vender,
+mantener o comprar) y le devuelve la recompensa.
+
+No hay que modificarlo: todos los agentes se entrenan y se evalúan aquí, y así
+los resultados se pueden comparar con los del enunciado.
 """
 import gymnasium as gym
 from gymnasium import spaces

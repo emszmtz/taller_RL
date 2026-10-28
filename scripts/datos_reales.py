@@ -1,20 +1,25 @@
-"""Extra: agentes entrenados y evaluados con precios reales de EODHD.
+"""Extra: los mismos agentes, entrenados y evaluados con precios reales de EODHD.
 
-Activos: S&P 500 (SPY, con dividendos), IBEX 35, Bitcoin y EUR/USD, con precios
-diarios ajustados.
-- Entrenamiento: ventanas al azar de 500 días hasta 2018 (Bitcoin, desde 2014).
-- Test: desde 2019 hasta el último dato disponible, como un único episodio.
+Se usan cuatro activos con precios diarios ajustados: el S&P 500 (a través del
+fondo SPY, con dividendos), el IBEX 35, Bitcoin y el euro frente al dólar.
 
-Con datos reales no se ajustan hiperparámetros: solo hay una historia de cada
-activo y cualquier elección sobre ella sería sobreajuste. Se prueban dos
-configuraciones fijadas de antemano, con 10 semillas, para Q-learning y Sarsa:
-la sin ajustar de la fase 1 y la ajustada en la fase 2 para el mercado de
-regímenes, el simulado más parecido a un mercado real.
+- Para entrenar, cada episodio usa una ventana de 500 días elegida al azar
+  entre 2005 y 2018 (Bitcoin, desde 2014).
+- Para evaluar, el agente recorre de una vez todo el periodo desde 2019 hasta el
+  último dato disponible.
 
-La primera vez necesita la clave de EODHD en .env; después usa la copia de data/.
-En results/reales_*.csv solo se guardan fechas, métricas y políticas, nunca precios.
+Aquí no se ajustan hiperparámetros: de cada activo solo hay una historia, y
+elegir la configuración mirándola sería hacer trampa (sobreajuste). En su lugar
+se prueban dos configuraciones decididas de antemano, con Q-learning y Sarsa y
+10 semillas: la sin ajustar de la fase 1 y la que salió mejor en la fase 2 para
+el mercado de regímenes, que es el simulado que más se parece a uno real.
 
-Uso, desde la raíz del repositorio:  python scripts/datos_reales.py
+La primera vez hace falta la clave de EODHD en .env; después se usa la copia
+guardada en data/. En results/reales_*.csv solo se guardan fechas, métricas y
+políticas, nunca precios.
+
+Para lanzarlo, desde la raíz del repositorio:  python scripts/datos_reales.py
+
 Con 10 núcleos tarda unos 10 minutos.
 """
 import json
@@ -29,11 +34,16 @@ from rl_trader.experiments import CONFIG_SIN_AJUSTAR, HIPERPARAMETROS, ejecutar_
 from rl_trader.real import ACTIVOS, FIN_ENTRENAMIENTO, INICIO_TEST, cargar, dividir, ejecutar_real
 
 RESULTADOS = Path(__file__).resolve().parent.parent / "results"
+# Las mismas semillas y la misma duración que en la fase 3
 SEMILLAS = range(100, 110)
 EPISODIOS = 4000
 
 
 def configuraciones(datos):
+    """Prepara la lista de entrenamientos: cada activo, algoritmo y configuración, con cada semilla.
+
+    datos tiene, para cada activo, sus precios de entrenamiento y de test.
+    """
     mejores = pd.read_csv(RESULTADOS / "fase2_mejores.csv")
     regimenes = {f.algoritmo: {k: getattr(f, k) for k in HIPERPARAMETROS} | {"n_episodios": EPISODIOS}
                  for f in mejores[mejores.mercado == "regimenes"].itertuples()}
@@ -53,6 +63,7 @@ def main():
         print(f"ya existe {ruta.name}, no se repite")
         return
 
+    # Se cargan los precios de cada activo y se anotan las fechas de cada periodo
     datos, periodos = {}, []
     for activo, info in ACTIVOS.items():
         serie = cargar(activo)
@@ -71,6 +82,8 @@ def main():
     salidas = ejecutar_varios(configs, funcion=ejecutar_real)
     print(f"{len(configs)} entrenamientos en {(time.perf_counter() - t0) / 60:.1f} min")
 
+    # De cada entrenamiento se guardan sus métricas en los dos periodos y, aparte,
+    # la política aprendida (como cadena de ceros y unos, con sus cortes)
     filas, politicas = [], []
     for s in salidas:
         clave = {"activo": s["activo"], "agente": s["algoritmo"], "variante": s["variante"], "seed": s["seed"]}
@@ -79,7 +92,7 @@ def main():
         politicas.append(clave | {"segundos": s["segundos"], "politica": s["politica"],
                                   "cortes": json.dumps(s["cortes"])})
 
-    # Políticas de referencia en los mismos periodos
+    # Las estrategias de referencia, en los mismos periodos
     for activo, (entrenamiento, test) in datos.items():
         for periodo, precios in (("entrenamiento", entrenamiento), ("test", test)):
             for nombre, fabrica in BASELINES.items():

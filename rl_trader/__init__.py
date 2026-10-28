@@ -1,1 +1,1 @@
-"""Taller de RL (MIAX-14): agente de trading tabular con Q-learning y Sarsa."""
+"""Taller de RL (MIAX-14): un agente de trading que aprende con Q-learning, Sarsa o Monte Carlo."""

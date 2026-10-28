@@ -1,8 +1,8 @@
-"""Descarga de precios reales diarios desde la API de EODHD.
+"""Descarga de precios reales diarios desde EODHD.
 
-La clave se lee de la variable de entorno EODHD_API_KEY, o del fichero .env de
-la raíz del repositorio (que está en .gitignore). Nunca la escribas en el
-código ni en un notebook: el repositorio es público.
+Hace falta una clave de EODHD. Se lee de la variable de entorno EODHD_API_KEY o
+del fichero .env de la raíz del repositorio, que git ignora. No la escribas
+nunca en el código ni en un notebook: el repositorio es público.
 """
 import os
 from pathlib import Path
@@ -19,6 +19,7 @@ load_dotenv(ROOT / ".env")
 
 
 def _api_key():
+    """Devuelve la clave de EODHD o da un error que explica cómo configurarla."""
     key = os.environ.get("EODHD_API_KEY")
     if not key:
         raise RuntimeError(
@@ -29,11 +30,16 @@ def _api_key():
 
 
 def descargar_precios(ticker, start=None, end=None, cache=True):
-    """Devuelve un DataFrame diario indexado por fecha con OHLCV y adjusted_close.
+    """Descarga los precios diarios de un activo y los devuelve como tabla.
 
-    - ticker: formato SIMBOLO.BOLSA, p. ej. "SPY.US", "BTC-USD.CC", "EURUSD.FOREX".
-    - start, end: fechas "YYYY-MM-DD" (opcionales).
-    - cache: guarda y reutiliza una copia en data/, que no se sube al repositorio.
+    La tabla tiene una fila por día y columnas de apertura, máximo, mínimo,
+    cierre, cierre ajustado y volumen.
+
+    - ticker: el código del activo en EODHD, con el formato SÍMBOLO.MERCADO; por
+      ejemplo, "SPY.US", "BTC-USD.CC" o "EURUSD.FOREX".
+    - start, end: fechas de inicio y fin, "AAAA-MM-DD" (opcionales).
+    - cache: si es True, guarda una copia en data/ y la próxima vez la lee de ahí
+      sin volver a descargar. La carpeta data/ no se sube al repositorio.
     """
     path = DATA_DIR / f"{ticker}_{start or 'inicio'}_{end or 'fin'}.csv"
     if cache and path.exists():
@@ -45,8 +51,9 @@ def descargar_precios(ticker, start=None, end=None, cache=True):
     if end:
         params["to"] = end
 
-    # Los errores de requests incluyen la URL completa, y con ella la clave.
-    # Se relanzan sin ella para que no acabe en la salida de un notebook.
+    # Si la conexión falla, el error de requests incluye la URL completa, y con
+    # ella la clave. Por eso se da un error propio sin la URL: así la clave no
+    # puede acabar en la salida de un notebook.
     try:
         resp = requests.get(EOD_URL.format(ticker=ticker), params=params, timeout=30)
     except requests.RequestException as e:
